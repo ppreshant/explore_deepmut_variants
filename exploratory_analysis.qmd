@@ -7,11 +7,11 @@ Goals
 - plotting distributions
 
 ```{r loadStuff}
-library(tidyverse)
+library(tidyverse, quietly = TRUE)
 
 # import data
-base_path <- "archive/3R5library_madison/"
-data <- read_tsv(str_c(base_path, "variant_data_parsed.tsv"))
+base_path <- "enrichment_data/theoAptzNNN_lokya/"
+data <- read_csv(str_c(base_path, "processed_data.csv"))
 
 summarise(data, count = n(), .by = Nham_nt) |> print()
 cat("total rows in data: ", nrow(data), "\n")

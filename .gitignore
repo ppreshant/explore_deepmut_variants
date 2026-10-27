@@ -1,3 +1,9 @@
 # ignore previous analysis, archives
 archive/
 prelim_analysis/
+
+# data
+enrichment_data/
+
+# other files
+snowflake.log
