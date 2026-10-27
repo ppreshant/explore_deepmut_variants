@@ -1,0 +1,18 @@
+# Exploratory analysis
+
+Goals
+
+- Identify the best threshold to remove noise; improve quantitative predictions from ML
+
+- plotting distributions
+
+```{r loadStuff}
+library(tidyverse)
+
+# import data
+base_path <- "archive/3R5library_madison/"
+data <- read_tsv(str_c(base_path, "variant_data_parsed.tsv"))
+
+summarise(data, count = n(), .by = Nham_nt) |> print()
+cat("total rows in data: ", nrow(data), "\n")
+```
