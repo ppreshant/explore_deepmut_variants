@@ -26,23 +26,49 @@ base_path <- "enrichment_data/theoAptzepPCR_lokya/"
 data <- read_tsv(str_c(base_path, "subset.tsv"))
 ```
 
-```{r prelim-plot}
+```{r plotting_functions}
 #| fig-width: 2
 #| fig-height: 3
+
+annotation_generator <- function(max_x_val, max_y_val) { 
+#' Generates a function to create text annotations for a plot.
+#' Inputs:
+#'   - max_x: the maximum x value in the plot (used to position the annotation)
+#'   - max_y: the maximum y value in the plot (used to position the annotation)
+#' Returns:
+#'   - A function that takes x_scale, label_text, and y_offset as arguments and returns a ggplot2 annotation layer.
+
+  function(x_scale = 0.6, label_text, y_offset) {
+  # work in progress ;
+  # make a text annotation to add to the plot; based on offset values for x and y
+    annotate(geom = "text",
+      x = max_x_val * x_scale, 
+      y = 0 + y_offset * max_y_val/10, 
+      label = label_text, 
+      hjust = 0, vjust = 1.5, size = 3)
+  }
+}
 
 nham_count_distribution <-  function(df, print_stats = FALSE) {
 
   # TODO: adjust the x and y positions of annotate() based on data max/ total fct counts etc.
 
-  counts <- summarise(df, count = n(), .by = Nham_nt)
+  counts <- summarise(df, count = n(), .by = Nham_nt) # summarize to get variant counts at each Nham_nt value
 
+  # calculate summaries for plotting
   snp_count <- counts |> filter(Nham_nt > 0) |> pull(count) |> sum()
   indel_count <- counts |> filter(is.na(Nham_nt)) |> pull(count)
+  total_count <- nrow(df)
 
+  # Calculate dynamic positions
+  max_count <- max(counts$count, na.rm = FALSE)
+  num_nham <- nrow(counts)
+  add_annotation <- annotation_generator(max_x_val = max_count, max_y_val = num_nham) # create a function to add annotations to the plot
+ 
   if(print_stats) {
     # print stats
     cat("snp_count =", snp_count, "\nindel_count = ", indel_count, "\n")
-    cat("total = ", nrow(df), "variants\n")
+    cat("total = ", total_count, "variants\n")
   }
 
   # Plot variant counts
@@ -53,9 +79,9 @@ nham_count_distribution <-  function(df, print_stats = FALSE) {
     labs(x = "Number of variants", y = "Number of mismatches") + # axis labels
     geom_text(aes(label = count), hjust = -0.1, size = 3) + # count of each bar
     # summary variant counts: snps, indels, total
-    annotate(geom = "text", x = 100, y = 2, label = str_c("snps: ", snp_count), hjust = 0, vjust = 1.5, size = 3) +
-    annotate(geom = "text", x = 100, y = 1.5, label = str_c("indels: ", indel_count), hjust = 0, vjust = 1.5, size = 3) +
-    annotate(geom = "text", x = 100, y = 1, label = str_c("total: ", nrow(df)), hjust = 0, vjust = 1.5, size = 3) + 
+    add_annotation(label_text = str_c("snps: ", snp_count), y_offset = 2) +
+    add_annotation(label_text = str_c("indels: ", indel_count), y_offset = 1.5) +
+    add_annotation(label_text = str_c("total: ", total_count), y_offset = 1) +
 
     # aesthetics
     theme_bw() + 
