@@ -1,3 +1,14 @@
+---
+title: "exploratory analysis of deepmut variants"
+execute:
+  echo: false
+format:
+  html:
+    code-fold: true
+    fig-width: 8
+    fig-height: 6  
+---
+
 # Exploratory analysis
 
 Goals
@@ -8,15 +19,70 @@ Goals
 
 ```{r loadStuff}
 library(tidyverse, quietly = TRUE)
+library(grid)
 
 # import data
-base_path <- "enrichment_data/theoAptzNNN_lokya/"
-data <- read_csv(str_c(base_path, "processed_data.csv"))
-
-summarise(data, count = n(), .by = Nham_nt) |> print()
-cat("total rows in data: ", nrow(data), "\n")
+base_path <- "enrichment_data/theoAptzepPCR_lokya/"
+data <- read_tsv(str_c(base_path, "subset.tsv"))
 ```
 
-```{r subsets}
-ggplot(data, )
+```{r prelim-plot}
+#| fig-width: 2
+#| fig-height: 3
+
+nham_count_distribution <-  function(df, print_stats = FALSE) {
+
+  # TODO: adjust the x and y positions of annotate() based on data max/ total fct counts etc.
+
+  counts <- summarise(df, count = n(), .by = Nham_nt)
+
+  snp_count <- counts |> filter(Nham_nt > 0) |> pull(count) |> sum()
+  indel_count <- counts |> filter(is.na(Nham_nt)) |> pull(count)
+
+  if(print_stats) {
+    # print stats
+    cat("snp_count =", snp_count, "\nindel_count = ", indel_count, "\n")
+    cat("total = ", nrow(df), "variants\n")
+  }
+
+  # Plot variant counts
+  plt <- ggplot(counts, aes(count, fct_rev(as_factor(Nham_nt)))) + 
+    geom_bar(stat = "identity", width = 1) + 
+
+    # annotations
+    labs(x = "Number of variants", y = "Number of mismatches") + # axis labels
+    geom_text(aes(label = count), hjust = -0.1, size = 3) + # count of each bar
+    # summary variant counts: snps, indels, total
+    annotate(geom = "text", x = 100, y = 2, label = str_c("snps: ", snp_count), hjust = 0, vjust = 1.5, size = 3) +
+    annotate(geom = "text", x = 100, y = 1.5, label = str_c("indels: ", indel_count), hjust = 0, vjust = 1.5, size = 3) +
+    annotate(geom = "text", x = 100, y = 1, label = str_c("total: ", nrow(df)), hjust = 0, vjust = 1.5, size = 3) + 
+
+    # aesthetics
+    theme_bw() + 
+    scale_x_continuous(expand = expansion(mult = c(0.1, .25))) # expand x-axis to make room for text annotations
+  print(plt)
+}
+
+nham_count_distribution(head(data, 1000))
+```
+
+```{r threshold_test}
+#| fig-width: 2
+#| fig-height: 3
+
+d1 <- data |> filter(if_any(matches("count"), \(ct) ct >= 2))
+
+nham_count_distribution(d1)
+```
+
+```{r dummy-test}
+#| fig-width: 2
+#| fig-height: 3
+
+dummy <- tibble(x = 1:10, y = x^2)
+
+ggplot(dummy, aes(x, y)) + geom_point() + labs(title = "Dummy plot") + 
+  annotation_custom(grob = textGrob(str_c("snps: ", snp_count), hjust = 0, vjust = 1.5, gp = gpar(size = 3)), 
+                  xmax = Inf-8, ymin = -Inf)
+
 ```
