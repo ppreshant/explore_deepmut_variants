@@ -16,3 +16,7 @@ data <- read_csv(str_c(base_path, "processed_data.csv"))
 summarise(data, count = n(), .by = Nham_nt) |> print()
 cat("total rows in data: ", nrow(data), "\n")
 ```
+
+```{r subsets}
+ggplot(data, )
+```
