@@ -19,14 +19,31 @@ Goals
 
 ```{r loadStuff}
 library(tidyverse, quietly = TRUE)
-library(grid)
+library(magrittr) # for special Tee pipe operator %T>% (Error check, unique WT before calc)
 
-# import data
+# import functions
+source("functions/0.data_processing.R")
+source("functions/1.plotting.R")
+
+# locate the data
 base_path <- "enrichment_data/theoAptzepPCR_lokya/"
-data <- read_tsv(str_c(base_path, "subset.tsv"))
+# file_path <- str_c(base_path, "subset.tsv") # for testing
+file_path <- str_c(base_path, "DiMSum_Project_variant_data_merge.tsv") # for production
+```
+## Data cleanup
+- Select relevant columns
+- Clean up column names
+- Calculate enrichment, leak metrics
+Ref: _Borrowing some code from DiMSum/[split-multiinputs.R](https://github.com/ppreshant/DiMSum/blob/master/scripts/split_multiinputs.R) 
+
+```{r data-cleanup}
+data <- read_and_cleanup_data(file_path)
+cat("Column names: ", paste(colnames(data), collapse = ", "), "\n")
 ```
 
-```{r plotting_functions}
+
+## Visualizations
+```{r raw_count_distribution}
 #| fig-width: 2
 #| fig-height: 3
 
