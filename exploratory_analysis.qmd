@@ -13,9 +13,7 @@ format:
 
 # Exploratory analysis
 
-Goals 
-- Identify the best threshold to remove noise; improve quantitative predictions from ML 
-- plotting distributions
+Goals - Identify the best threshold to remove noise; improve quantitative predictions from ML - plotting distributions
 
 ## Preliminary setup
 
@@ -211,4 +209,67 @@ ggplot(count_tracker, aes(x = threshold, y = variants)) +
        y = "Number of Variants") +
   theme_minimal()
 
+```
+
+# Indel analysis
+
+## Read count distribution
+
+```{r indel_read_distribution}
+#| fig-width: 2
+#| fig-height: 3
+
+WT_len <- data |>
+  filter(Nham_nt == 0) |>
+  pull(sequence_length) |>
+  unique() # get WT length 
+
+indels <- data |>
+  filter(is.na(Nham_nt)) |> # filter for indels
+  mutate(indel_length = sequence_length - WT_len) # calculate indel length
+
+read_distribution(indels)
+```
+
+## Variant distribution by sequence length
+
+```{r indel_variant_distribution}
+#| fig-width: 2
+#| fig-height: 3
+
+# indel_variant_counts <- summarise(indels, count = n(), .by = indel_length) # summarize to get variant counts at each Nham_nt value
+
+ggplot(indels, aes(y = indel_length)) +
+  geom_histogram(bins = 50, fill = "steelblue", colour = "black") + 
+  # geom_hline(yintercept = 0) +
+  # annotate("text", 
+  #   x = 0.9 * max(indel_variant_counts$count),
+  #   y = 0, 
+  #   label = "WT length", 
+  #   hjust = 1, vjust = -1) +
+  labs(title = "Indel Variant Distribution by Sequence Length",
+       x = "Number of Variants",
+       y = "Indel Length (nt)") +
+  theme_minimal()
+```
+
+## Read distribution by sequence length
+
+```{r indel_variant_distribution}
+#| fig-width: 2
+#| fig-height: 3
+
+indel_read_counts <- summarise(indels, count = sum(Input_count), .by = indel_length) # summarize to get variant counts at each Nham_nt value
+
+
+
+ggplot(indel_read_counts, aes(x = count, y = indel_length)) +
+geom_point(size = 2, color = "steelblue") +
+# xlim(0, 5000)
+scale_x_log10() +
+  # geom_bar(stat = "identity", fill = "steelblue") + 
+  labs(title = "Indel Read Distribution by Sequence Length",
+       x = "Number of Reads",
+       y = "Indel Length (nt)") +
+  theme_minimal()
 ```
