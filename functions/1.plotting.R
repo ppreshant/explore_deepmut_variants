@@ -1,3 +1,5 @@
+# Plotting functions ---------
+
 ## annotation generating function -----
 
 #' Generates a function to create text annotations for a plot.
@@ -17,6 +19,7 @@ annotation_generator <- function(max_x_val, max_y_val) {
       hjust = 0, vjust = 1.5, size = 3)
   }
 }
+
 
 ## plot counts vs nham -----
 #' Plot the distribution of Nham_nt counts in a data frame.
@@ -62,8 +65,33 @@ nham_any_count_distribution <-  function(
     # aesthetics
     theme_bw() + 
     scale_x_continuous(expand = expansion(mult = c(0.1, .25))) # expand x-axis to make room for text annotations
+
   print(plt)
+  
 }
+
+## Read distribution -----
+read_distribution <- function(df, .col = "Input_count") {
+
+  ggplot(df, aes(y = .data[[.col]])) +
+    geom_histogram(bins = 30, fill = "steelblue", color = "black") +
+    scale_y_log10() + 
+    scale_x_continuous(name = "Count (thousands)", 
+      labels = scales::label_number(scale = 1e-3)) +
+
+    # annotations
+    # stat_bin( # add counts on top of bars
+    #   binwidth = 5,
+    #   geom = "text",
+    #   aes(label = after_stat(count)), 
+    #   vjust = -0.4) +
+    labs(y = str_c(.col, " (log10 scale)")) +
+    theme_minimal()
+
+}
+
+
+# Summarize and send to plot -----
 
 ## plot variant counts vs nham -----
 #' Plot the distribution of Nham_nt counts in a data frame.
@@ -88,6 +116,7 @@ nham_read_count_distribution <- function(df, print_stats = FALSE) {
   counts <- summarise(df, count = sum(Input_count), .by = Nham_nt) # summarize to get variant counts at each Nham_nt value
   nham_any_count_distribution(counts, x_identifier = "reads") # call the generic function to plot read counts vs nham
 }
+
 
 # formatting numbers for plot labels ----
 #' Format numbers for plot labels: use scientific notation for large numbers, and commas for thousands.

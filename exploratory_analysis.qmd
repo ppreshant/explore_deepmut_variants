@@ -66,6 +66,16 @@ var_raw <- nham_variant_count_distribution(data) # all data
 read_raw <- nham_read_count_distribution(data)
 ```
 
+```{r raw_read_distribution}
+#| fig-width: 6
+#| fig-height: 3
+
+read_distribution(data) +
+  read_distribution(data, "Selection_count") +
+  read_distribution(data, "Leak_count")
+```
+
+
 Looking at the distribution of Nham_nt counts, we can see that there are a lot of variants with low counts. We want to filter out these low-count variants to reduce noise in our analysis.
 
 ## Filtering variants with counts >= 2
