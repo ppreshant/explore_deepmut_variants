@@ -13,8 +13,8 @@ format:
 
 # Exploratory analysis
 
-Goals
-- Identify the best threshold to remove noise; improve quantitative predictions from ML
+Goals 
+- Identify the best threshold to remove noise; improve quantitative predictions from ML 
 - plotting distributions
 
 ## Preliminary setup
@@ -37,11 +37,12 @@ file_path <- str_c(base_path, "DiMSum_Project_variant_data_merge.tsv") # for pro
 expected_variants <- 135000 # (epPCR) from colony counts (source: Lokya)
 count_tracker <<- tibble(threshold = numeric(), variants = numeric(), reads = numeric())
 ```
+
 ## Data cleanup
+
 - Select relevant columns
 - Clean up column names
-- Calculate enrichment, leak metrics
-Ref: _Borrowing some code from DiMSum/[split-multiinputs.R](https://github.com/ppreshant/DiMSum/blob/master/scripts/split_multiinputs.R) 
+- Calculate enrichment, leak metrics Ref: \_Borrowing some code from DiMSum/[split-multiinputs.R](https://github.com/ppreshant/DiMSum/blob/master/scripts/split_multiinputs.R)
 
 ```{r data-cleanup}
 data <- read_and_cleanup_data(file_path)
@@ -55,8 +56,8 @@ cat("Total variants: ", format(total_variants, big.mark = ","), "\n")
 cat("Total reads: ", format(total_reads, big.mark = ","), "\n")
 ```
 
-
 ## Raw visualization
+
 ```{r raw_count_distribution}
 #| fig-width: 2
 #| fig-height: 3
@@ -79,10 +80,10 @@ patch_read_dist_multi_columns(data) +
 
 ```
 
-
 Looking at the distribution of reads, we can see that there are a lot of variants with low counts. We want to filter out these low-count variants to reduce noise in our analysis.
 
-## Filtering variants with counts >= 2
+## Filtering variants with counts \>= 2
+
 ```{r threshold_2}
 #| fig-width: 2
 #| fig-height: 3
@@ -92,7 +93,7 @@ var_2 <- nham_variant_count_distribution(d2)
 read_2 <- nham_read_count_distribution(d2)
 ```
 
-Visualize read count distribution like above 
+Visualize read count distribution like above
 
 ```{r threshold_2_read_distribution}
 #| fig-width: 5
@@ -102,7 +103,8 @@ patch_read_dist_multi_columns(d2) +
                   subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis")
 ```
 
-## Filtering variants with counts >= 5
+## Filtering variants with counts \>= 5
+
 ```{r threshold_5}
 #| fig-width: 2
 #| fig-height: 3
@@ -120,7 +122,8 @@ patch_read_dist_multi_columns(d5) +
                   subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis")
 ```
 
-## Filtering variants with counts >= 10
+## Filtering variants with counts \>= 10
+
 ```{r threshold_10}
 #| fig-width: 2
 #| fig-height: 3
@@ -138,7 +141,8 @@ patch_read_dist_multi_columns(d10) +
                   subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis")
 ```
 
-## Filtering variants with counts >= 100
+## Filtering variants with counts \>= 100
+
 ```{r threshold_100}
 #| fig-width: 2
 #| fig-height: 3
@@ -159,6 +163,7 @@ patch_read_dist_multi_columns(d100) +
 ## Comparing plots for different thresholds
 
 ### Variant count distributions
+
 ```{r patch_variant_dist}
 #| fig-width: 6
 #| fig-height: 6
@@ -182,8 +187,7 @@ read_plots <- read_raw + read_2 + read_5 + read_10 + read_100 + plot_layout(axes
 print(read_plots)
 ```
 
-
-## Variant counts vs expected 
+## Variant counts vs expected
 
 ```{r variant_counts_vs_expected}
 #| fig-width: 4
