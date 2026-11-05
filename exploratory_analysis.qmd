@@ -12,9 +12,7 @@ format:
 # Exploratory analysis
 
 Goals
-
 - Identify the best threshold to remove noise; improve quantitative predictions from ML
-
 - plotting distributions
 
 ```{r loadStuff}
@@ -39,6 +37,12 @@ Ref: _Borrowing some code from DiMSum/[split-multiinputs.R](https://github.com/p
 ```{r data-cleanup}
 data <- read_and_cleanup_data(file_path)
 cat("Column names: ", paste(colnames(data), collapse = ", "), "\n")
+
+total_variants <- nrow(data)
+total_reads <- sum(data$Input_count)
+
+cat("Total variants: ", format(total_variants, big.mark = ","), "\n")
+cat("Total reads: ", format(total_reads, big.mark = ","), "\n")
 ```
 
 
@@ -49,9 +53,8 @@ cat("Column names: ", paste(colnames(data), collapse = ", "), "\n")
 
 # nham_variant_count_distribution(head(data, 1000)) # top 1,000 data
 nham_variant_count_distribution(data) # all data
+nham_read_count_distribution(data)
 ```
-
-
 
 Looking at the distribution of Nham_nt counts, we can see that there are a lot of variants with low counts. We want to filter out these low-count variants to reduce noise in our analysis.
 
@@ -60,8 +63,30 @@ Looking at the distribution of Nham_nt counts, we can see that there are a lot o
 #| fig-width: 2
 #| fig-height: 3
 
-d2 <- data |> filter(if_any(matches("count"), \(ct) ct >= 2))
+d2 <- filter_data(data, 2)
+
 nham_variant_count_distribution(d2)
+nham_read_count_distribution(d2)
+```
+
+## Filtering variants with counts >= 10
+```{r threshold_test}
+#| fig-width: 2
+#| fig-height: 3
+
+d10 <- filter_data(data, 10)
+nham_variant_count_distribution(d10)
+nham_read_count_distribution(d10)
+```
+
+## Filtering variants with counts >= 100
+```{r threshold_test}
+#| fig-width: 2
+#| fig-height: 3
+
+d100 <- filter_data(data, 100)
+nham_variant_count_distribution(d100)
+nham_read_count_distribution(d100)
 ```
 
 ## Testing annotation placement
@@ -76,6 +101,6 @@ dummy <- tibble(x = 1:10, y = x^2)
 # ref: https://ggplot2.tidyverse.org/reference/annotation_custom.html
 ggplot(dummy, aes(x, y)) + geom_point() + labs(title = "Dummy plot") + 
   annotation_custom(grob = textGrob(str_c("snps: ", snp_count), hjust = 0, vjust = 1.5, gp = gpar(size = 3)), 
-                  xmax = 0, ymin = 0)
+  xmax = 0, ymin = 0)
 
 ```
