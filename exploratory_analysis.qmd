@@ -4,6 +4,7 @@ title: "exploratory analysis of deepmut variants"
   # echo: false
 format:
   html:
+    toc: true
     code-fold: true
     embed-resources: true
     fig-width: 8
@@ -15,6 +16,8 @@ format:
 Goals
 - Identify the best threshold to remove noise; improve quantitative predictions from ML
 - plotting distributions
+
+## Preliminary setup
 
 ```{r loadStuff}
 library(tidyverse, quietly = TRUE)
@@ -53,7 +56,7 @@ cat("Total reads: ", format(total_reads, big.mark = ","), "\n")
 ```
 
 
-## Visualizations
+## Raw visualization
 ```{r raw_count_distribution}
 #| fig-width: 2
 #| fig-height: 3
@@ -71,7 +74,6 @@ Looking at the distribution of Nham_nt counts, we can see that there are a lot o
 #| fig-height: 3
 
 d2 <- filter_data(data, 2)
-
 var_2 <- nham_variant_count_distribution(d2)
 read_2 <- nham_read_count_distribution(d2)
 ```

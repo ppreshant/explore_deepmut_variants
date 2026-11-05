@@ -53,11 +53,11 @@ nham_any_count_distribution <-  function(
 
     # annotations
     labs(x = str_c("Number of ", x_identifier), y = "Number of mismatches") + # axis labels
-    geom_text(aes(label = count), hjust = -0.1, size = 3) + # count of each bar
+    geom_text(aes(label = format_numeric_labels(count)), hjust = -0.1, size = 3) + # count of each bar
     # summary variant counts: snps, indels, total
-    add_annotation(label_text = str_c("snps: ", snp_count), y_offset = 2) +
-    add_annotation(label_text = str_c("indels: ", indel_count), y_offset = 1.5) +
-    add_annotation(label_text = str_c("total: ", total_count), y_offset = 1) +
+    add_annotation(label_text = str_c("snps: ", format_numeric_labels(snp_count)), y_offset = 2) +
+    add_annotation(label_text = str_c("indels: ", format_numeric_labels(indel_count)), y_offset = 1.5) +
+    add_annotation(label_text = str_c("total: ", format_numeric_labels(total_count)), y_offset = 1) +
 
     # aesthetics
     theme_bw() + 
@@ -87,4 +87,27 @@ nham_read_count_distribution <- function(df, print_stats = FALSE) {
   
   counts <- summarise(df, count = sum(Input_count), .by = Nham_nt) # summarize to get variant counts at each Nham_nt value
   nham_any_count_distribution(counts, x_identifier = "reads") # call the generic function to plot read counts vs nham
+}
+
+# formatting numbers for plot labels ----
+#' Format numbers for plot labels: use scientific notation for large numbers, and commas for thousands.
+#' @param n A numeric vector to format.
+#' @return A character vector with formatted numbers.
+format_numeric_labels <- function(n) {
+  # Format numbers for plot labels: use scientific notation for large numbers, and commas for thousands
+  case_when(
+    n >= 1e6 ~ lab_sci(n),  # ex: 2,000,000 -> 2e6
+    n >= 1e3 ~ str_c(format(round(n / 1000), big.mark = ","), "k"),  # ex: 2,000 -> 2K
+    n >= 1 ~ format(n, scientific = FALSE),  # format for numbers >= 1
+    TRUE ~ format(n, digits = 2)  # default case for numbers < 1
+  )
+}
+
+## format numbers for plot labels in scientific notation ----
+#' Format numbers for plot labels in scientific notation, removing unnecessary leading zeros.
+#' @param x A numeric vector to format.
+#' @return A character vector with formatted numbers.
+lab_sci <- function(x) {
+  sub("e\\+?(-?)0*", "e\\1",
+      scales::label_scientific(digits = 1)(x))
 }
