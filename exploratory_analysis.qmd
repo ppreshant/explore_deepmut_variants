@@ -66,17 +66,21 @@ var_raw <- nham_variant_count_distribution(data) # all data
 read_raw <- nham_read_count_distribution(data)
 ```
 
-```{r raw_read_distribution}
-#| fig-width: 6
-#| fig-height: 3
+Plotting the distribution of reads in the raw data, selection counts, and leak counts. This will help us understand the distribution of reads across different categories.
 
-read_distribution(data) +
-  read_distribution(data, "Selection_count") +
-  read_distribution(data, "Leak_count")
+```{r raw_read_distribution}
+#| fig-width: 5
+#| fig-height: 4
+
+source("functions/1.plotting.R") # temp
+patch_read_dist_multi_columns(data) + 
+  plot_annotation(title = "Distribution of reads in raw data",
+                  subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis")
+
 ```
 
 
-Looking at the distribution of Nham_nt counts, we can see that there are a lot of variants with low counts. We want to filter out these low-count variants to reduce noise in our analysis.
+Looking at the distribution of reads, we can see that there are a lot of variants with low counts. We want to filter out these low-count variants to reduce noise in our analysis.
 
 ## Filtering variants with counts >= 2
 ```{r threshold_2}
@@ -86,6 +90,16 @@ Looking at the distribution of Nham_nt counts, we can see that there are a lot o
 d2 <- filter_data(data, 2)
 var_2 <- nham_variant_count_distribution(d2)
 read_2 <- nham_read_count_distribution(d2)
+```
+
+Visualize read count distribution like above 
+
+```{r threshold_2_read_distribution}
+#| fig-width: 5
+#| fig-height: 4
+patch_read_dist_multi_columns(d2) + 
+  plot_annotation(title = "Distribution of reads in filtered data (count >= 2)",
+                  subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis")
 ```
 
 ## Filtering variants with counts >= 5
@@ -98,6 +112,14 @@ var_5 <- nham_variant_count_distribution(d5)
 read_5 <- nham_read_count_distribution(d5)
 ```
 
+```{r threshold_5_read_distribution}
+#| fig-width: 5
+#| fig-height: 4
+patch_read_dist_multi_columns(d5) + 
+  plot_annotation(title = "Distribution of reads in filtered data (count >= 5)",
+                  subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis")
+```
+
 ## Filtering variants with counts >= 10
 ```{r threshold_10}
 #| fig-width: 2
@@ -108,6 +130,14 @@ var_10 <- nham_variant_count_distribution(d10)
 read_10 <- nham_read_count_distribution(d10)
 ```
 
+```{r threshold_10_read_distribution}
+#| fig-width: 5
+#| fig-height: 4
+patch_read_dist_multi_columns(d10) + 
+  plot_annotation(title = "Distribution of reads in filtered data (count >= 10)",
+                  subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis")
+```
+
 ## Filtering variants with counts >= 100
 ```{r threshold_100}
 #| fig-width: 2
@@ -116,6 +146,14 @@ read_10 <- nham_read_count_distribution(d10)
 d100 <- filter_data(data, 100)
 var_100 <- nham_variant_count_distribution(d100)
 read_100 <- nham_read_count_distribution(d100)
+```
+
+```{r threshold_100_read_distribution}
+#| fig-width: 5
+#| fig-height: 4
+patch_read_dist_multi_columns(d100) + 
+  plot_annotation(title = "Distribution of reads in filtered data (count >= 100)",
+                  subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis")
 ```
 
 ## Comparing plots for different thresholds

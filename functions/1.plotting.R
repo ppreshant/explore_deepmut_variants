@@ -66,7 +66,7 @@ nham_any_count_distribution <-  function(
     theme_bw() + 
     scale_x_continuous(expand = expansion(mult = c(0.1, .25))) # expand x-axis to make room for text annotations
 
-  print(plt)
+  # print(plt)
   
 }
 
@@ -85,11 +85,29 @@ read_distribution <- function(df, .col = "Input_count") {
     #   geom = "text",
     #   aes(label = after_stat(count)), 
     #   vjust = -0.4) +
-    labs(y = str_c(.col, " (log10 scale)")) +
+    labs(y = .col) +
     theme_minimal()
 
 }
 
+### wrapper to patch this across columns 
+
+patch_read_dist_multi_columns <- function(df, .cols = c("Input_count", "Selection_count", "Leak_count")) {
+
+  # Create a list of plots for each column
+  plots <- lapply(.cols, read_distribution, df = df)
+  # names(plots) <- .cols
+
+  # patchwork (vectorized sum) to combine the plots into a single figure
+  # reduce(plots, `+`) + 
+  #   patchwork::plot_layout(nrow = length(plots), ncol = 1, axes = "collect") +
+  #   patchwork::plot_annotation(title = "Distribution of counts by column")
+  
+  patchwork::wrap_plots(plots, ncol = length(plots), 
+    axes = "collect")  
+    # patchwork::plot_annotation(title = "Distribution of counts by column")
+
+}
 
 # Summarize and send to plot -----
 
