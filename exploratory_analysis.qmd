@@ -27,6 +27,10 @@ source("functions/1.plotting.R")
 base_path <- "enrichment_data/theoAptzepPCR_lokya/"
 # file_path <- str_c(base_path, "subset.tsv") # for testing
 file_path <- str_c(base_path, "DiMSum_Project_variant_data_merge.tsv") # for production
+
+# global variables
+expected_variants <- 135000 # (epPCR) from colony counts (source: Lokya)
+count_tracker <<- tibble(threshold = numeric(), variants = numeric(), reads = numeric())
 ```
 ## Data cleanup
 - Select relevant columns
@@ -40,6 +44,7 @@ cat("Column names: ", paste(colnames(data), collapse = ", "), "\n")
 
 total_variants <- nrow(data)
 total_reads <- sum(data$Input_count)
+count_tracker <<- count_tracker |> add_row(threshold = 0, variants = total_variants, reads = total_reads)
 
 cat("Total variants: ", format(total_variants, big.mark = ","), "\n")
 cat("Total reads: ", format(total_reads, big.mark = ","), "\n")

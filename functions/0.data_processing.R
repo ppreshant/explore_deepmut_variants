@@ -75,6 +75,8 @@ filter_data <- function(df, count_threshold = 2) {
   fil_variants <- nrow(filtered)
   fil_reads <- sum(filtered$Input_count)
 
+  count_tracker <<- count_tracker |> add_row(threshold = count_threshold, variants = fil_variants, reads = fil_reads)
+
   cat("Retained ", 
     format(fil_variants/total_variants * 100, digits = 2), 
     "% Variants with counts >= ", count_threshold, "\n", sep = "")
