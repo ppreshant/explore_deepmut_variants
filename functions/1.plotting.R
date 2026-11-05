@@ -18,22 +18,23 @@ annotation_generator <- function(max_x_val, max_y_val) {
   }
 }
 
-## plot variant counts vs nham -----
+## plot counts vs nham -----
 #' Plot the distribution of Nham_nt counts in a data frame.
 #' @param df A data frame containing a column named Nham_nt.
 #' @param print_stats Whether to print summary statistics.
 #' @return A ggplot object showing the distribution of Nham_nt counts.
- 
-nham_variant_count_distribution <-  function(df, print_stats = FALSE) {
+
+nham_any_count_distribution <-  function(
+    counts,
+    x_identifier = "variants",
+    print_stats = FALSE) {
 
   # TODO: format the axis labels and annotations for pretty reading (comman in numbers etc.)
 
-  counts <- summarise(df, count = n(), .by = Nham_nt) # summarize to get variant counts at each Nham_nt value
-
   # calculate summaries for plotting
   snp_count <- counts |> filter(Nham_nt > 0) |> pull(count) |> sum()
-  indel_count <- counts |> filter(is.na(Nham_nt)) |> pull(count)
-  total_count <- nrow(df)
+  indel_count <- counts |> filter(is.na(Nham_nt)) |> pull(count) |> sum()
+  total_count <- counts |> pull(count) |> sum()
 
   # Calculate dynamic positions
   max_count <- max(counts$count, na.rm = FALSE)
@@ -51,7 +52,7 @@ nham_variant_count_distribution <-  function(df, print_stats = FALSE) {
     geom_bar(stat = "identity", width = 1) + 
 
     # annotations
-    labs(x = "Number of variants", y = "Number of mismatches") + # axis labels
+    labs(x = str_c("Number of ", x_identifier), y = "Number of mismatches") + # axis labels
     geom_text(aes(label = count), hjust = -0.1, size = 3) + # count of each bar
     # summary variant counts: snps, indels, total
     add_annotation(label_text = str_c("snps: ", snp_count), y_offset = 2) +
@@ -64,28 +65,26 @@ nham_variant_count_distribution <-  function(df, print_stats = FALSE) {
   print(plt)
 }
 
+## plot variant counts vs nham -----
+#' Plot the distribution of Nham_nt counts in a data frame.
+#' @param df A data frame containing a column named Nham_nt.
+#' @param print_stats Whether to print summary statistics.
+#' @return A ggplot object showing the distribution of Nham_nt counts.
+ 
+nham_variant_count_distribution <-  function(df, print_stats = FALSE) {
+
+  counts <- summarise(df, count = n(), .by = Nham_nt) # summarize to get variant counts at each Nham_nt value
+  nham_any_count_distribution(counts) # call the generic function to plot counts vs nham
+}
+
 ## plot read counts vs nham -----
+#' Plot the distribution of reads by Nham_nt.
+#' @param df A data frame containing a column named Nham_nt.
+#' @param print_stats Whether to print summary statistics.
+#' @return A ggplot object showing the distribution of Nham_nt counts.
 
 nham_read_count_distribution <- function(df, print_stats = FALSE) {
-  counts <- summarise(df, count = n(), .by = Nham_nt) # summarize to get variant counts at each Nham_nt value
-
-  # calculate summaries for plotting
-  snp_count <- counts |> filter(Nham_nt > 0) |> pull(count) |> sum()
-  indel_count <- counts |> filter(is.na(Nham_nt)) |> pull(count)
-  total_count <- nrow(df)
-
-  if(print_stats) {
-    # print stats
-    cat("snp_count =", snp_count, "\nindel_count = ", indel_count, "\n")
-    cat("total = ", total_count, "variants\n")
-  }
-
-  # Plot variant counts
-  plt <- ggplot(counts, aes(count, fct_rev(as_factor(Nham_nt)))) + 
-    geom_bar(stat = "identity", width = 1) + 
-    labs(x = "Number of variants", y = "Number of mismatches") + # axis labels
-    geom_text(aes(label = count), hjust = -0.1, size = 3) + # count of each bar
-    theme_bw() + 
-    scale_x_continuous(expand = expansion(mult = c(0.1, .25))) # expand x-axis to make room for text annotations
-  print(plt)
+  
+  counts <- summarise(df, count = sum(Input_count), .by = Nham_nt) # summarize to get variant counts at each Nham_nt value
+  nham_any_count_distribution(counts, x_identifier = "reads") # call the generic function to plot read counts vs nham
 }
