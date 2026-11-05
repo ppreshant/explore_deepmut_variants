@@ -89,18 +89,9 @@ nham_variant_count_distribution(d100)
 nham_read_count_distribution(d100)
 ```
 
-## Testing annotation placement
-```{r dummy-test}
-#| fig-width: 2
-#| fig-height: 3
+## Variant counts vs expected 
 
-library(grid) # for plotting advanced: textGrob etc.
-dummy <- tibble(x = 1:10, y = x^2)
+```{r variant_counts_vs_expected}
 
-# testing static position of annotation (figure out x/xmax and y/ymin)
-# ref: https://ggplot2.tidyverse.org/reference/annotation_custom.html
-ggplot(dummy, aes(x, y)) + geom_point() + labs(title = "Dummy plot") + 
-  annotation_custom(grob = textGrob(str_c("snps: ", snp_count), hjust = 0, vjust = 1.5, gp = gpar(size = 3)), 
-  xmax = 0, ymin = 0)
 
 ```
