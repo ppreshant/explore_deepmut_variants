@@ -105,16 +105,31 @@ read_100 <- nham_read_count_distribution(d100)
 ```
 
 ## Comparing plots for different thresholds
-```{r compare_thresholds}
-#| fig-width: 4
-#| fig-height: 3
+
+### Variant count distributions
+```{r patch_variant_dist}
+#| fig-width: 6
+#| fig-height: 6
 
 # Compare the variant count distributions for different thresholds
 # plot the above plots side by side for comparison
+var_plots <- var_raw + var_2 + var_5 + var_10 + var_100 + plot_layout(axes = "collect")
 
-
-
+print(var_plots)
 ```
+
+### Read count distributions
+
+```{r patch_read_dist}
+#| fig-width: 6
+#| fig-height: 6
+
+# plot the above plots side by side for comparison
+read_plots <- read_raw + read_2 + read_5 + read_10 + read_100 + plot_layout(axes = "collect")
+
+print(read_plots)
+```
+
 
 ## Variant counts vs expected 
 
