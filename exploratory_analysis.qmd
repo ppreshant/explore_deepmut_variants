@@ -57,8 +57,8 @@ cat("Total reads: ", format(total_reads, big.mark = ","), "\n")
 #| fig-height: 3
 
 # nham_variant_count_distribution(head(data, 1000)) # top 1,000 data
-nham_variant_count_distribution(data) # all data
-nham_read_count_distribution(data)
+var_raw <- nham_variant_count_distribution(data) # all data
+read_raw <- nham_read_count_distribution(data)
 ```
 
 Looking at the distribution of Nham_nt counts, we can see that there are a lot of variants with low counts. We want to filter out these low-count variants to reduce noise in our analysis.
@@ -70,8 +70,18 @@ Looking at the distribution of Nham_nt counts, we can see that there are a lot o
 
 d2 <- filter_data(data, 2)
 
-nham_variant_count_distribution(d2)
-nham_read_count_distribution(d2)
+var_2 <- nham_variant_count_distribution(d2)
+read_2 <- nham_read_count_distribution(d2)
+```
+
+## Filtering variants with counts >= 5
+```{r threshold_test}
+#| fig-width: 2
+#| fig-height: 3
+
+d5 <- filter_data(data, 5)
+var_5 <- nham_variant_count_distribution(d5)
+read_5 <- nham_read_count_distribution(d5)
 ```
 
 ## Filtering variants with counts >= 10
@@ -80,8 +90,8 @@ nham_read_count_distribution(d2)
 #| fig-height: 3
 
 d10 <- filter_data(data, 10)
-nham_variant_count_distribution(d10)
-nham_read_count_distribution(d10)
+var_10 <- nham_variant_count_distribution(d10)
+read_10 <- nham_read_count_distribution(d10)
 ```
 
 ## Filtering variants with counts >= 100
@@ -90,13 +100,44 @@ nham_read_count_distribution(d10)
 #| fig-height: 3
 
 d100 <- filter_data(data, 100)
-nham_variant_count_distribution(d100)
-nham_read_count_distribution(d100)
+var_100 <- nham_variant_count_distribution(d100)
+read_100 <- nham_read_count_distribution(d100)
+```
+
+## Comparing plots for different thresholds
+```{r compare_thresholds}
+#| fig-width: 4
+#| fig-height: 3
+
+# Compare the variant count distributions for different thresholds
+# plot the above plots side by side for comparison
+
+
+
 ```
 
 ## Variant counts vs expected 
 
 ```{r variant_counts_vs_expected}
+#| fig-width: 4
+#| fig-height: 2
 
+# plot the variant counts vs expected variants from count_tracker
+
+ggplot(count_tracker, aes(x = threshold, y = variants)) +
+  geom_line(alpha = 0.7) +
+  geom_point() +
+
+  # expected variants line
+  geom_hline(yintercept = expected_variants, linetype = "dashed") +
+  annotate("text", 
+    x = max(count_tracker$threshold) * 0.7, 
+    y = expected_variants + max(count_tracker$variants)/10, 
+    label = str_c("Expected: ", format(expected_variants, big.mark = ","), " variants")) +
+
+  labs(title = "Variant Counts with thresholds",
+       x = "Count Threshold",
+       y = "Number of Variants") +
+  theme_minimal()
 
 ```
