@@ -44,10 +44,13 @@ read_and_cleanup_data <- function(file_path) {
       
       # error check that breaks calculations
       if (WT_count == 1) {
-        message(WT_count, " => A single wild-type sequence found (Nham_nt == 0).")
+WT_finder_vec_logical <<- (.$Nham_nt == 0 & !is.na(.$Nham_nt))
+        message(WT_count, " => A single wild-type sequence found (Nham_nt == 0); will proceed with relative catalysis/leak calculations")
       } else {
-        message("Cannot proceed with relative catalysis/leak calculations.")
-        stop("Non unique/no wild-type sequences found: ", WT_count)
+WT_finder_vec_logical <<- NA
+        message("Will not proceed with relative catalysis/leak calculations. Since,
+          no unique wild-type sequence row found.\n 
+          Nham_nt == 0 (no NAs) gives: ", WT_count)
       }
     } |>
 
@@ -55,8 +58,8 @@ read_and_cleanup_data <- function(file_path) {
     mutate(
       catalysis_score = selection_freq / input_freq,
       leak_score = leak_freq / input_freq,
-      relative_catalysis = catalysis_score / catalysis_score[Nham_nt == 0 & !is.na(Nham_nt)],
-      relative_leak = leak_score / leak_score[Nham_nt == 0 & !is.na(Nham_nt)],
+      relative_catalysis = catalysis_score / catalysis_score[WT_finder_vec_logical],
+      relative_leak = leak_score / leak_score[WT_finder_vec_logical],
       net_catalysis = relative_catalysis / (1 + relative_leak)
   )
 }
