@@ -8,7 +8,8 @@
 		"chat.tools.terminal.autoApprove": {
 			"printf": true,
 			"command": true,
-			"true": true
+			"true": true,
+			"R": true
 		}
 	}
 }

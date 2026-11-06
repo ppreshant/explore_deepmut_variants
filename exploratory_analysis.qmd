@@ -347,8 +347,11 @@ dtst <- head(d100, 8) |>
   filter(!is.na(Nham_nt)) |>
   add_row(wt_row) # add a WT row for testing
 
+source("functions/2.contribution_table.R") # temp
+
 contribution_table_test <- make_contribution_table(dtst)
-contribution_table_test
+
+contribution_table_test |> filter(total_mutations > 0) |> View(title = "contri_test")
 
 ```
 

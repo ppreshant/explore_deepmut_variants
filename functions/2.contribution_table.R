@@ -78,20 +78,36 @@ make_contribution_table <- function(df) {
         relative_leak_mean,
         net_catalysis_mean
       ),
-      names_glue = "mutated_to_{mutant_nucleotide}_{.value}"
+      names_glue = "x>{mutant_nucleotide}_{.value}"
     )
 
   by_nucleotide |>
     mutate(
       total_mutations = rowSums(
-        pick(matches("^mutated_to_[ACGT]_count$"))
-      ) # Total substitutions at this position.
+        pick(matches("^x>[ACGT]_count$")),
+        na.rm = TRUE
+      ), # Total substitutions at this position.
+      total_relative_catalysis_sum = rowSums(
+        pick(matches("^x>[ACGT]_relative_catalysis_sum$")),
+        na.rm = TRUE
+      ), # Total catalysis change at this position.
+      total_relative_leak_sum = rowSums(
+        pick(matches("^x>[ACGT]_relative_leak_sum$")),
+        na.rm = TRUE
+      ), # Total leak change at this position.
+      total_net_catalysis_sum = rowSums(
+        pick(matches("^x>[ACGT]_net_catalysis_sum$")),
+        na.rm = TRUE
+      ) # Total net catalysis change at this position.
     ) |>
     ungroup() |>
     select(
       position,
       wt_nucleotide,
       total_mutations,
+      total_relative_catalysis_sum,
+      total_relative_leak_sum,
+      total_net_catalysis_sum,
       everything()
     )
 }
