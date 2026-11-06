@@ -80,6 +80,17 @@ patch_read_dist_multi_columns(data) +
 
 Looking at the distribution of reads, we can see that there are a lot of variants with low counts. We want to filter out these low-count variants to reduce noise in our analysis.
 
+## Filtering variants with counts \>= 1
+
+```{r threshold_2}
+#| fig-width: 2
+#| fig-height: 3
+
+d1 <- filter_data(data, 1)
+var_1 <- nham_variant_count_distribution(d1)
+read_1 <- nham_read_count_distribution(d1)
+```
+
 ## Filtering variants with counts \>= 2
 
 ```{r threshold_2}
@@ -233,13 +244,14 @@ read_distribution(indels)
 
 ## Variant distribution by sequence length
 
-```{r indel_variant_distribution}
-#| fig-width: 2
+```{r indel_distribution_by_length}
+#| fig-width: 4
 #| fig-height: 3
 
 # indel_variant_counts <- summarise(indels, count = n(), .by = indel_length) # summarize to get variant counts at each Nham_nt value
 
-ggplot(indels, aes(y = indel_length)) +
+indel_variant_dist <- 
+  ggplot(indels, aes(y = indel_length)) +
   geom_histogram(bins = 50, fill = "steelblue", colour = "black") + 
   # geom_hline(yintercept = 0) +
   # annotate("text", 
@@ -251,27 +263,25 @@ ggplot(indels, aes(y = indel_length)) +
        x = "Number of Variants",
        y = "Indel Length (nt)") +
   theme_minimal()
-```
 
-## Read distribution by sequence length
-
-```{r indel_read_vs_length}
-#| fig-width: 2
-#| fig-height: 3
-
+# indel read distr
 indel_read_counts <- summarise(indels, count = sum(Input_count), .by = indel_length) # summarize to get variant counts at each Nham_nt value
 
-
-
-ggplot(indel_read_counts, aes(x = count, y = indel_length)) +
-geom_point(size = 2, color = "steelblue") +
-# xlim(0, 5000)
-scale_x_log10() +
+indel_read_dist <- 
+  ggplot(indel_read_counts, aes(x = count, y = indel_length)) +
+  geom_point(size = 2, color = "steelblue") +
+  # xlim(0, 5000)
+  scale_x_log10() +
   # geom_bar(stat = "identity", fill = "steelblue") + 
   labs(title = "Indel Read Distribution by Sequence Length",
        x = "Number of Reads",
        y = "Indel Length (nt)") +
   theme_minimal()
+
+# combine the two plots
+indel_variant_dist + indel_read_dist + plot_layout(axes = "collect") + 
+  plot_annotation(title = "Indel Variant and Read Distribution by Sequence Length",
+                  subtitle = "Comparing number of variants and number of reads for each indel length. Note log10 scale on x-axis for read distribution")
 ```
 
 # Catalysis/leak analysis 
@@ -283,9 +293,9 @@ scale_x_log10() +
 #| fig-height: 3
 
 
-cat_dist <- read_distribution(d5, "relative_catalysis")
-leak_dist <- read_distribution(d5, "relative_leak")
-net_cat_dist <- read_distribution(d5, "net_catalysis")
+cat_dist <- read_distribution(d1, "relative_catalysis")
+leak_dist <- read_distribution(d1, "relative_leak")
+net_cat_dist <- read_distribution(d1, "net_catalysis")
 
 (cat_dist + leak_dist + net_cat_dist +
   plot_layout(ncol = 3)+
@@ -297,13 +307,21 @@ net_cat_dist <- read_distribution(d5, "net_catalysis")
 
 ## Comparing catalysis and leak scores
 
+```{r}
+perc_cat_leak <- d1 |>
+  summarise(frac_cat_leak = 100 * sum(relative_catalysis > relative_leak, na.rm = TRUE) / nrow(d1)) |>
+  pull(frac_cat_leak)
+
+```
+
+`{r} perc_cat_leak`% of variants have higher catalysis scores than leak scores in the filtered data (count >= 1).
 
 ```{r catalysis_leak_comparison}
 #| fig-width: 5
 #| fig-height: 3
 
-ggplot(d5, aes(y = relative_catalysis, x = relative_leak)) +
-  geom_point() +
+ggplot(d1, aes(y = relative_catalysis, x = relative_leak)) +
+  geom_point(alpha = 0.1, colour = "black") +
   scale_x_log10() + scale_y_log10() +
   geom_abline(slope = 1, intercept = 0, color = "red") +
   labs(title = "Comparison of Catalysis and Leak Scores",
@@ -317,13 +335,13 @@ What are these outliers at the edges (-Inf / zeros before log10 transformation)?
 ```{r calcs}
 #| echo: false
 
-zero_cat_d5 <- filter(d5, relative_catalysis == 0) |> nrow()
-zero_leak_d5 <- filter(d5, relative_leak == 0) |> nrow()
+zero_cat_d1 <- filter(d1, relative_catalysis == 0) |> nrow()
+zero_leak_d1 <- filter(d1, relative_leak == 0) |> nrow()
 
-d5cat0 <- filter(d5, relative_catalysis == 0)
+d1cat0 <- filter(d1, relative_catalysis == 0)
 ```
 
-`{r} zero_cat_d5` variants have zero catalysis scores and `{r} zero_leak_d5` variants have zero leak scores in the filtered data (count >= 5). There are due to wrong filtering step that happened initially. let's repeat this to see what happens. 
+`{r} zero_cat_d1` variants have zero catalysis scores and `{r} zero_leak_d1` variants have zero leak scores in the filtered data (count >= 1).
 
 ## Debug filtering
 
@@ -333,6 +351,8 @@ d5a <- data |> filter(Input_count >= 5, Selection_count >= 5, Leak_count >= 5)
 
 d5a |> nrow() # check number of variants after filtering
 d5 |> nrow() # check number of variants after filtering
+
+d1 |> filter(if_any(matches("count"), \(x) x == 0)) |> nrow()
 ```
 
 # Mapping contribution to each nucleotide position
@@ -351,15 +371,38 @@ source("functions/2.contribution_table.R") # temp
 
 contribution_table_test <- make_contribution_table(dtst)
 
-contribution_table_test |> filter(total_mutations > 0) |> View(title = "contri_test")
-
+# check x>A mean and sum/count (tallies)
+# contribution1[1,] |> 
+#   select(position, total_mutations, contains("x>A")) |>
+#   View(title = "contr1_row1")
+#   # mutate(mean_2 = `x>A_relative_catalysis_sum` / `x>A_relative_catalysis_count`) |> print()
 ```
 
 The table below counts substitutions and sums the WT-normalised score changes
 for each destination nucleotide at each position. Indels are excluded, and a multi-mutant contributes its complete score change to each of its substitutions.
 
 ```{r contribution_table}
-source("functions/2.contribution_table.R") # temp
-contribution_table <- make_contribution_table(d5)
-contribution_table
+contribution1 <- make_contribution_table(d1)
+
+# contribution1 |> filter(total_mutations > 0) |> 
+#   View(title = "contr1")
+
+# plot total_net catalysis across positions
+contribution1 |> 
+  # filter(total_mutations > 0) |> 
+  ggplot(aes(x = position, y = total_net_catalysis_mean)) +
+  geom_point() + geom_line(alpha = 0.4) +
+
+  # annotations for positions of interest
+  geom_hline(yintercept = 0, color = "red") + 
+  annotate("rect", xmin = 21, xmax = 27, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "orange") + # ribozyme core
+
+  # communication modules
+  annotate("rect", xmin = 49, xmax = 53, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
+  annotate("rect", xmin = 73, xmax = 77, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
+  # geom_annotate("rect", xmin = 73, xmax = 77, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "grey") +
+
+  labs(title = "Distribution of total net catalysis mean across positions") +
+  theme_minimal()
+
 ```

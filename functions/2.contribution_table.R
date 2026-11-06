@@ -98,13 +98,31 @@ make_contribution_table <- function(df) {
       total_net_catalysis_sum = rowSums(
         pick(matches("^x>[ACGT]_net_catalysis_sum$")),
         na.rm = TRUE
-      ) # Total net catalysis change at this position.
+      ), # Total net catalysis change at this position.
+      total_relative_catalysis_mean = if_else(
+        total_mutations > 0,
+        total_relative_catalysis_sum / total_mutations,
+        NA_real_
+      ), # Mean catalysis change across all substitutions.
+      total_relative_leak_mean = if_else(
+        total_mutations > 0,
+        total_relative_leak_sum / total_mutations,
+        NA_real_
+      ), # Mean leak change across all substitutions.
+      total_net_catalysis_mean = if_else(
+        total_mutations > 0,
+        total_net_catalysis_sum / total_mutations,
+        NA_real_
+      ) # Mean net catalysis change across all substitutions.
     ) |>
     ungroup() |>
     select(
       position,
       wt_nucleotide,
       total_mutations,
+      total_relative_catalysis_mean,
+      total_relative_leak_mean,
+      total_net_catalysis_mean,
       total_relative_catalysis_sum,
       total_relative_leak_sum,
       total_net_catalysis_sum,
