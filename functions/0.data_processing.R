@@ -70,7 +70,7 @@ read_and_cleanup_data <- function(file_path) {
 
 filter_data <- function(df, count_threshold = 2) {
 
-  filtered <- df |> filter(if_any(matches("count"), \(ct) ct >= count_threshold))
+  filtered <- df |> filter(if_all(matches("count"), \(ct) ct >= count_threshold))
 
   fil_variants <- nrow(filtered)
   fil_reads <- sum(filtered$Input_count)
