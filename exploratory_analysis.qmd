@@ -25,6 +25,7 @@ library(patchwork) # for combining plots
 # import functions
 source("functions/0.data_processing.R")
 source("functions/1.plotting.R")
+source("functions/2.contribution_table.R")
 
 # locate the data
 base_path <- "enrichment_data/theoAptzepPCR_lokya/"
@@ -291,7 +292,7 @@ net_cat_dist <- read_distribution(d5, "net_catalysis")
   plot_annotation(title = "Distribution of catalysis and leak scores",
     subtitle = "Comparing catalysis, leak and net catalysis scores. Note log10 scale on y-axis") 
 ) & 
-  geom_hline(yintercept = 1, color = "red", thickness = 2) 
+  geom_hline(yintercept = 1, color = "red") 
 ```
 
 ## Comparing catalysis and leak scores
@@ -322,8 +323,9 @@ zero_leak_d5 <- filter(d5, relative_leak == 0) |> nrow()
 d5cat0 <- filter(d5, relative_catalysis == 0)
 ```
 
-`{r} zero_cat_d5` variants have zero catalysis scores and `{r} zero_leak_d5` variants have zero leak scores in the filtered data (count >= 5). These variants are likely to be outliers or noise in the data. We can consider filtering them out for further analysis.
+`{r} zero_cat_d5` variants have zero catalysis scores and `{r} zero_leak_d5` variants have zero leak scores in the filtered data (count >= 5). There are due to wrong filtering step that happened initially. let's repeat this to see what happens. 
 
+## Debug filtering
 
 ```{r debug_d5}
 
@@ -331,4 +333,15 @@ d5a <- data |> filter(Input_count >= 5, Selection_count >= 5, Leak_count >= 5)
 
 d5a |> nrow() # check number of variants after filtering
 d5 |> nrow() # check number of variants after filtering
+```
+
+# Mapping contribution to each nucleotide position
+
+The table below counts substitutions and sums the WT-normalised score changes
+for each destination nucleotide at each position. Indels are excluded, and a
+multi-mutant contributes its complete score change to each of its substitutions.
+
+```{r contribution_table}
+contribution_table <- make_contribution_table(d5)
+contribution_table
 ```
