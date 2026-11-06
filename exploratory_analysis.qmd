@@ -71,7 +71,6 @@ Plotting the distribution of reads in the raw data, selection counts, and leak c
 #| fig-width: 5
 #| fig-height: 4
 
-source("functions/1.plotting.R") # temp
 patch_read_dist_multi_columns(data) + 
   plot_annotation(title = "Distribution of reads in raw data",
                   subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis")
@@ -255,7 +254,7 @@ ggplot(indels, aes(y = indel_length)) +
 
 ## Read distribution by sequence length
 
-```{r indel_variant_distribution}
+```{r indel_read_vs_length}
 #| fig-width: 2
 #| fig-height: 3
 
@@ -272,4 +271,64 @@ scale_x_log10() +
        x = "Number of Reads",
        y = "Indel Length (nt)") +
   theme_minimal()
+```
+
+# Catalysis/leak analysis 
+
+## Distributions
+
+```{r catalysis_leak_distribution}
+#| fig-width: 5
+#| fig-height: 3
+
+
+cat_dist <- read_distribution(d5, "relative_catalysis")
+leak_dist <- read_distribution(d5, "relative_leak")
+net_cat_dist <- read_distribution(d5, "net_catalysis")
+
+(cat_dist + leak_dist + net_cat_dist +
+  plot_layout(ncol = 3)+
+  plot_annotation(title = "Distribution of catalysis and leak scores",
+    subtitle = "Comparing catalysis, leak and net catalysis scores. Note log10 scale on y-axis") 
+) & 
+  geom_hline(yintercept = 1, color = "red", thickness = 2) 
+```
+
+## Comparing catalysis and leak scores
+
+
+```{r catalysis_leak_comparison}
+#| fig-width: 5
+#| fig-height: 3
+
+ggplot(d5, aes(y = relative_catalysis, x = relative_leak)) +
+  geom_point() +
+  scale_x_log10() + scale_y_log10() +
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  labs(title = "Comparison of Catalysis and Leak Scores",
+        y = "Catalysis, WT normalized",
+        x = "Leak, WT normalized") +
+  theme_minimal()
+
+```
+
+What are these outliers at the edges (-Inf / zeros before log10 transformation)? Let's check how many variants have zero catalysis or leak scores.
+```{r calcs}
+#| echo: false
+
+zero_cat_d5 <- filter(d5, relative_catalysis == 0) |> nrow()
+zero_leak_d5 <- filter(d5, relative_leak == 0) |> nrow()
+
+d5cat0 <- filter(d5, relative_catalysis == 0)
+```
+
+`{r} zero_cat_d5` variants have zero catalysis scores and `{r} zero_leak_d5` variants have zero leak scores in the filtered data (count >= 5). These variants are likely to be outliers or noise in the data. We can consider filtering them out for further analysis.
+
+
+```{r debug_d5}
+
+d5a <- data |> filter(Input_count >= 5, Selection_count >= 5, Leak_count >= 5)
+
+d5a |> nrow() # check number of variants after filtering
+d5 |> nrow() # check number of variants after filtering
 ```
