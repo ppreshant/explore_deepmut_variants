@@ -6,9 +6,10 @@
 #' change. Indels are excluded because their positions cannot be aligned to WT.
 make_contribution_table <- function(df) {
 
+  # Identify the single WT sequence used as the score normalisation reference.
   wt_rows <- df |>
-    dplyr::filter(!is.na(Nham_nt), Nham_nt == 0) |>
-    dplyr::distinct(nt_seq)
+    filter(!is.na(Nham_nt), Nham_nt == 0) |>
+    distinct(nt_seq)
 
   if (nrow(wt_rows) != 1) {
     stop("Expected exactly one unique wild-type sequence (Nham_nt == 0).")
@@ -17,47 +18,41 @@ make_contribution_table <- function(df) {
   wt_sequence <- toupper(wt_rows$nt_seq[[1]])
   wt_nucleotides <- strsplit(wt_sequence, "", fixed = TRUE)[[1]]
 
-  variants <- df |>
-    dplyr::filter(
-      !is.na(Nham_nt),
-      sequence_length == length(wt_nucleotides),
-      !is.na(nt_seq),
-      !is.na(relative_catalysis),
-      !is.na(relative_leak),
-      !is.na(net_catalysis)
-    ) |>
-    dplyr::mutate(
-      .positions = purrr::map(nt_seq, \(sequence) {
+  # Keep aligned variants with complete scores and expand each mutation
+  # into one row so multi-mutants contribute to every affected position.
+  variants <-
+    filter(df, !is.na(Nham_nt)) |> # remove indels (retain SNPs)
+    mutate(
+      .positions = map(nt_seq, \(sequence) {
         sequence_nucleotides <- strsplit(toupper(sequence), "", fixed = TRUE)[[1]]
-        which(sequence_nucleotides != wt_nucleotides)
+        which(sequence_nucleotides != wt_nucleotides) # Locate substitutions.
       })
     ) |>
-    tidyr::unnest_longer(.positions, values_to = "position") |>
-    dplyr::mutate(
-      wt_nucleotide = wt_nucleotides[position],
-      mutant_nucleotide = purrr::map_chr(
-        nt_seq,
-        \(sequence) strsplit(toupper(sequence), "", fixed = TRUE)[[1]][position]
-      ),
-      catalysis_change = relative_catalysis - 1,
-      leak_change = relative_leak - 1,
-      net_catalysis_change = net_catalysis - 1
+    unnest_longer(.positions, values_to = "position") |>
+    mutate(
+      wt_nucleotide = wt_nucleotides[position], # Record the WT base.
+      mutant_nucleotide = str_sub(toupper(nt_seq), position, position),
+      catalysis_change = relative_catalysis - 1, # Convert to WT-relative change.
+      leak_change = relative_leak - 1, # Convert to WT-relative change.
+      net_catalysis_change = net_catalysis - 1 # Convert to WT-relative change.
     ) |>
-    dplyr::filter(mutant_nucleotide %in% c("A", "C", "G", "T"))
+    filter(mutant_nucleotide %in% c("A", "C", "G", "T")) # Keep SNPs.
 
+  # Aggregate mutation counts and score changes for each position/base pair.
   by_nucleotide <- variants |>
-    dplyr::group_by(position, wt_nucleotide, mutant_nucleotide) |>
-    dplyr::summarise(
-      count = dplyr::n(),
-      relative_catalysis_sum = sum(catalysis_change),
-      relative_leak_sum = sum(leak_change),
-      net_catalysis_sum = sum(net_catalysis_change),
-      relative_catalysis_mean = mean(catalysis_change),
-      relative_leak_mean = mean(leak_change),
-      net_catalysis_mean = mean(net_catalysis_change),
+    group_by(position, wt_nucleotide, mutant_nucleotide) |>
+    summarise(
+      count = n(), # Number of variants with this substitution.
+      relative_catalysis_sum = sum(catalysis_change), # Total catalysis change.
+      relative_leak_sum = sum(leak_change), # Total leak change.
+      net_catalysis_sum = sum(net_catalysis_change), # Total net change.
+      relative_catalysis_mean = mean(catalysis_change), # Mean catalysis change.
+      relative_leak_mean = mean(leak_change), # Mean leak change.
+      net_catalysis_mean = mean(net_catalysis_change), # Mean net change.
       .groups = "drop"
     ) |>
-    tidyr::complete(
+    # Add zero-count rows so every position has all four destination bases.
+    complete(
       position = seq_along(wt_nucleotides),
       mutant_nucleotide = c("A", "C", "G", "T"),
       fill = list(
@@ -70,8 +65,9 @@ make_contribution_table <- function(df) {
         net_catalysis_mean = NA_real_
       )
     ) |>
-    dplyr::mutate(wt_nucleotide = wt_nucleotides[position]) |>
-    tidyr::pivot_wider(
+    mutate(wt_nucleotide = wt_nucleotides[position]) |>
+    # Put each destination base's metrics into separate columns.
+    pivot_wider(
       names_from = mutant_nucleotide,
       values_from = c(
         count,
@@ -86,16 +82,16 @@ make_contribution_table <- function(df) {
     )
 
   by_nucleotide |>
-    dplyr::mutate(
+    mutate(
       total_mutations = rowSums(
-        dplyr::pick(dplyr::matches("^mutated_to_[ACGT]_count$"))
-      )
+        pick(matches("^mutated_to_[ACGT]_count$"))
+      ) # Total substitutions at this position.
     ) |>
-    dplyr::ungroup() |>
-    dplyr::select(
+    ungroup() |>
+    select(
       position,
       wt_nucleotide,
       total_mutations,
-      dplyr::everything()
+      everything()
     )
 }

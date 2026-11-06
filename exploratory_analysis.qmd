@@ -337,11 +337,26 @@ d5 |> nrow() # check number of variants after filtering
 
 # Mapping contribution to each nucleotide position
 
+## Test mutation-position mapping
+
+- test contribution table function
+
+```{r}
+wt_row <- d100 |> filter(Nham_nt == 0) |> slice(1)
+dtst <- head(d100, 8) |>
+  filter(!is.na(Nham_nt)) |>
+  add_row(wt_row) # add a WT row for testing
+
+contribution_table_test <- make_contribution_table(dtst)
+contribution_table_test
+
+```
+
 The table below counts substitutions and sums the WT-normalised score changes
-for each destination nucleotide at each position. Indels are excluded, and a
-multi-mutant contributes its complete score change to each of its substitutions.
+for each destination nucleotide at each position. Indels are excluded, and a multi-mutant contributes its complete score change to each of its substitutions.
 
 ```{r contribution_table}
+source("functions/2.contribution_table.R") # temp
 contribution_table <- make_contribution_table(d5)
 contribution_table
 ```
