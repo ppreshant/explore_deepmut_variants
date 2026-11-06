@@ -82,13 +82,21 @@ Looking at the distribution of reads, we can see that there are a lot of variant
 
 ## Filtering variants with counts \>= 1
 
-```{r threshold_2}
+```{r threshold_1}
 #| fig-width: 2
 #| fig-height: 3
 
 d1 <- filter_data(data, 1)
 var_1 <- nham_variant_count_distribution(d1)
 read_1 <- nham_read_count_distribution(d1)
+```
+
+```{r threshold_1_read_distribution}
+#| fig-width: 5
+#| fig-height: 4
+patch_read_dist_multi_columns(d1) + 
+  plot_annotation(title = "Distribution of reads in filtered data (count >= 1)",
+                  subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis")
 ```
 
 ## Filtering variants with counts \>= 2
@@ -246,7 +254,7 @@ read_distribution(indels)
 
 ```{r indel_distribution_by_length}
 #| fig-width: 4
-#| fig-height: 3
+#| fig-height: 5
 
 # indel_variant_counts <- summarise(indels, count = n(), .by = indel_length) # summarize to get variant counts at each Nham_nt value
 
@@ -288,9 +296,10 @@ indel_variant_dist + indel_read_dist + plot_layout(axes = "collect") +
 
 ## Distributions
 
+### >= 1 count
 ```{r catalysis_leak_distribution}
 #| fig-width: 5
-#| fig-height: 3
+#| fig-height: 4
 
 
 cat_dist <- read_distribution(d1, "relative_catalysis")
@@ -299,13 +308,70 @@ net_cat_dist <- read_distribution(d1, "net_catalysis")
 
 (cat_dist + leak_dist + net_cat_dist +
   plot_layout(ncol = 3)+
-  plot_annotation(title = "Distribution of catalysis and leak scores",
+  plot_annotation(title = "Distribution of catalysis and leak scores; >= 1 count",
     subtitle = "Comparing catalysis, leak and net catalysis scores. Note log10 scale on y-axis") 
 ) & 
   geom_hline(yintercept = 1, color = "red") 
 ```
 
-## Comparing catalysis and leak scores
+### \>= 2 count
+```{r catalysis_leak_distribution_2}
+#| fig-width: 5
+#| fig-height: 4
+
+
+cat_dist <- read_distribution(d2, "relative_catalysis")
+leak_dist <- read_distribution(d2, "relative_leak")
+net_cat_dist <- read_distribution(d2, "net_catalysis")
+
+(cat_dist + leak_dist + net_cat_dist +
+  plot_layout(ncol = 3)+
+  plot_annotation(title = "Distribution of catalysis and leak scores >= 2",
+    subtitle = "Comparing catalysis, leak and net catalysis scores.") 
+) & 
+  geom_hline(yintercept = 1, color = "red") 
+```
+
+### \>= 5 count
+```{r catalysis_leak_distribution_5}
+#| fig-width: 5
+#| fig-height: 4
+
+
+cat_dist <- read_distribution(d5, "relative_catalysis")
+leak_dist <- read_distribution(d5, "relative_leak")
+net_cat_dist <- read_distribution(d5, "net_catalysis")
+
+(cat_dist + leak_dist + net_cat_dist +
+  plot_layout(ncol = 3)+
+  plot_annotation(title = "Distribution of catalysis and leak scores >= 5",
+    subtitle = "Comparing catalysis, leak and net catalysis scores.") 
+) & 
+  geom_hline(yintercept = 1, color = "red") 
+```
+
+### \>= 10 count
+```{r catalysis_leak_distribution_10}
+#| fig-width: 5
+#| fig-height: 4
+
+
+cat_dist <- read_distribution(d10, "relative_catalysis")
+leak_dist <- read_distribution(d10, "relative_leak")
+net_cat_dist <- read_distribution(d10, "net_catalysis")
+
+(cat_dist + leak_dist + net_cat_dist +
+  plot_layout(ncol = 3)+
+  plot_annotation(title = "Distribution of catalysis and leak scores; >= 10",
+    subtitle = "Comparing catalysis, leak and net catalysis scores. Note log10 scale on y-axis") 
+) & 
+  geom_hline(yintercept = 1, color = "red") 
+```
+
+
+## Comparing catalysis and leak scores 
+
+### >= 1
 
 ```{r}
 perc_cat_leak <- d1 |>
@@ -316,7 +382,7 @@ perc_cat_leak <- d1 |>
 
 `{r} perc_cat_leak`% of variants have higher catalysis scores than leak scores in the filtered data (count >= 1).
 
-```{r catalysis_leak_comparison}
+```{r catalysis_leak_comparison1}
 #| fig-width: 5
 #| fig-height: 3
 
@@ -330,6 +396,26 @@ ggplot(d1, aes(y = relative_catalysis, x = relative_leak)) +
   theme_minimal()
 
 ```
+
+### >= 10
+
+
+```{r catalysis_leak_comparison10}
+#| fig-width: 5
+#| fig-height: 3
+
+ggplot(d10, aes(y = relative_catalysis, x = relative_leak)) +
+  geom_point(alpha = 0.1, colour = "black") +
+  scale_x_log10() + scale_y_log10() +
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  labs(title = "Comparison of Catalysis and Leak Scores",
+        y = "Catalysis, WT normalized",
+        x = "Leak, WT normalized") +
+  theme_minimal()
+```
+
+
+## outliners? 
 
 What are these outliers at the edges (-Inf / zeros before log10 transformation)? Let's check how many variants have zero catalysis or leak scores.
 ```{r calcs}
@@ -378,10 +464,12 @@ contribution_table_test <- make_contribution_table(dtst)
 #   # mutate(mean_2 = `x>A_relative_catalysis_sum` / `x>A_relative_catalysis_count`) |> print()
 ```
 
+## Net catalysis scores across the ribozyme sequence
+
 The table below counts substitutions and sums the WT-normalised score changes
 for each destination nucleotide at each position. Indels are excluded, and a multi-mutant contributes its complete score change to each of its substitutions.
 
-```{r contribution_table}
+```{r contribution_d1_net_cat}
 contribution1 <- make_contribution_table(d1)
 
 # contribution1 |> filter(total_mutations > 0) |> 
@@ -394,7 +482,7 @@ contribution1 |>
   geom_point() + geom_line(alpha = 0.4) +
 
   # annotations for positions of interest
-  geom_hline(yintercept = 0, color = "red") + 
+  geom_hline(yintercept = 0.5, color = "red") + 
   annotate("rect", xmin = 21, xmax = 27, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "orange") + # ribozyme core
 
   # communication modules
@@ -403,6 +491,54 @@ contribution1 |>
   # geom_annotate("rect", xmin = 73, xmax = 77, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "grey") +
 
   labs(title = "Distribution of total net catalysis mean across positions") +
+  theme_minimal()
+
+```
+
+## Relative catalysis scores across the ribozyme sequence
+
+```{r contribution_d1_rel_cat}
+
+# plot total_relative catalysis across positions
+contribution1 |> 
+  # filter(total_mutations > 0) |> 
+  ggplot(aes(x = position, y = total_relative_catalysis_mean)) +
+  geom_point() + geom_line(alpha = 0.4) +
+
+  # annotations for positions of interest
+  geom_hline(yintercept = 1, color = "red") + 
+  annotate("rect", xmin = 21, xmax = 27, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "orange") + # ribozyme core
+
+  # communication modules
+  annotate("rect", xmin = 49, xmax = 53, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
+  annotate("rect", xmin = 73, xmax = 77, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
+  # geom_annotate("rect", xmin = 73, xmax = 77, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "grey") +
+
+  labs(title = "Distribution of total relative catalysis mean across positions") +
+  theme_minimal()
+
+```
+
+## Relative leak scores across the ribozyme sequence
+
+```{r contribution_d1_rel_leak}
+
+# plot total_relative catalysis across positions
+contribution1 |> 
+  # filter(total_mutations > 0) |> 
+  ggplot(aes(x = position, y = total_relative_leak_mean)) +
+  geom_point() + geom_line(alpha = 0.4) +
+
+  # annotations for positions of interest
+  geom_hline(yintercept = 1, color = "red") + 
+  annotate("rect", xmin = 21, xmax = 27, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "orange") + # ribozyme core
+
+  # communication modules
+  annotate("rect", xmin = 49, xmax = 53, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
+  annotate("rect", xmin = 73, xmax = 77, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
+  # geom_annotate("rect", xmin = 73, xmax = 77, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "grey") +
+
+  labs(title = "Distribution of total relative leak mean across positions") +
   theme_minimal()
 
 ```

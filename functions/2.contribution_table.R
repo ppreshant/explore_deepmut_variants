@@ -32,9 +32,9 @@ make_contribution_table <- function(df) {
     mutate(
       wt_nucleotide = wt_nucleotides[position], # Record the WT base.
       mutant_nucleotide = str_sub(toupper(nt_seq), position, position),
-      catalysis_change = relative_catalysis - 1, # Convert to WT-relative change.
-      leak_change = relative_leak - 1, # Convert to WT-relative change.
-      net_catalysis_change = net_catalysis - 1 # Convert to WT-relative change.
+      catalysis_change = relative_catalysis - 0, # Convert to WT-relative change.
+      leak_change = relative_leak - 0, # Convert to WT-relative change.
+      net_catalysis_change = net_catalysis - 0 # Convert to WT-relative change.
     ) |>
     filter(mutant_nucleotide %in% c("A", "C", "G", "T")) # Keep SNPs.
 
