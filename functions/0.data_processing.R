@@ -66,7 +66,13 @@ read_and_cleanup_data <- function(file_path) {
       leak_score = leak_freq / input_freq,
       relative_catalysis = catalysis_score / catalysis_score[WT_finder_vec_logical],
       relative_leak = leak_score / leak_score[WT_finder_vec_logical],
-      net_catalysis = relative_catalysis / (1 + relative_leak)
+      net_catalysis = relative_catalysis / (1 + relative_leak),
+
+      # for other selection columns
+      catalysis_score_50 = selection_50_freq / input_freq,
+      catalysis_score_75 = selection_75_freq / input_freq,
+      relative_catalysis_50 = catalysis_score_50 / catalysis_score[WT_finder_vec_logical],
+      relative_catalysis_75 = catalysis_score_75 / catalysis_score[WT_finder_vec_logical]
     )
 
 }
