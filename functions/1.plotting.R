@@ -92,21 +92,19 @@ read_distribution <- function(df, .col = "Input_count") {
 
 ### wrapper to patch this across columns 
 
-patch_read_dist_multi_columns <- function(df, .cols = c("Input_count", "Selection_count", "Leak_count")) {
+patch_read_dist_multi_columns <- 
+  function(
+    df, 
+    .cols = c("Input_count", "Selection_count", "Leak_count"),
+    title = "Distribution of counts by column"
+) {
 
   # Create a list of plots for each column
-  plots <- lapply(.cols, read_distribution, df = df)
-  # names(plots) <- .cols
-
-  # patchwork (vectorized sum) to combine the plots into a single figure
-  # reduce(plots, `+`) + 
-  #   patchwork::plot_layout(nrow = length(plots), ncol = 1, axes = "collect") +
-  #   patchwork::plot_annotation(title = "Distribution of counts by column")
-  
-  patchwork::wrap_plots(plots, ncol = length(plots), 
-    axes = "collect")  
-    # patchwork::plot_annotation(title = "Distribution of counts by column")
-
+  plots <- 
+    lapply(.cols, read_distribution, df = df) |>
+      patchwork::wrap_plots(ncol = length(.cols), axes = "collect")
+    
+  plots + patchwork::plot_annotation(title = title)
 }
 
 # Summarize and send to plot -----

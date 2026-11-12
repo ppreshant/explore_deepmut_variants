@@ -53,10 +53,11 @@ cat("Column names: ", paste(colnames(data), collapse = ", "), "\n")
 
 total_variants <- nrow(data)
 total_reads <- sum(data$Input_count)
-count_tracker <- count_tracker |> 
-  add_row(threshold = 0,
-          variants = total_variants, input_reads = total_reads,
-          filtered_columns = "")
+
+# count_tracker <- count_tracker |> 
+#   add_row(threshold = 0,
+#           variants = total_variants, input_reads = total_reads,
+#           filtered_columns = "")
 
 cat("Total variants: ", format(total_variants, big.mark = ","), "\n")
 cat("Total reads: ", format(total_reads, big.mark = ","), "\n")
@@ -93,11 +94,12 @@ Table of variant counts and input reads at different thresholds
 
 
 ```{r filter_set1_allthresholds}
-thresholds <- c(1, 2, 5, 10, 100)
+thresholds <- c(0, 1, 2, 5, 10, 100)
+filter_set_25 <- c("Input_count", "Selection_count", "Leak_count")
 
 filter_list_25 <- 
   map(thresholds, 
-    filter_data, df = data, filter_columns = c("Input_count", "Selection_count", "Leak_count"))
+    filter_data, df = data, filter_columns = filter_set_25)
 
 count_log_25 <- bind_rows(count_tracker, 
   map(filter_list_25, \(x) x$count_tracker) |> 
@@ -107,152 +109,202 @@ count_log_25 <- bind_rows(count_tracker,
 
 ## Distribution of reads at different thresholds
 
-```{r}
-#| fig-width: 2
-#| fig-height: 3
-
-d1 <- filter_data(data, 1)
-var_1 <- nham_variant_count_distribution(d1)
-read_1 <- nham_read_count_distribution(d1)
-```
-
-```{r threshold_1_read_distribution}
+```{r read_distribution_25}
 #| fig-width: 5
-#| fig-height: 4
-patch_read_dist_multi_columns(d1) + 
-  plot_annotation(title = "Distribution of reads in filtered data (count >= 1)",
-                  subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis")
+#| fig-height: 20
+source("functions/1.plotting.R") # temp
+
+read_distribution_25 <-
+  map2(filter_list_25, thresholds, 
+    \(x, t) patch_read_dist_multi_columns(x$filtered, title = str_c("count >= ", t))) |> 
+
+    wrap_plots(ncol = 1, axes = "collect") |>
+    plot_annotation(title = "Distribution of reads at different thresholds", subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis") |>
+    print()
+  
 ```
 
-## Filtering variants with counts \>= 2
 
-```{r threshold_2}
-#| fig-width: 2
-#| fig-height: 3
+## Distributions across hamming distance
 
-d2 <- filter_data(data, 2)
-var_2 <- nham_variant_count_distribution(d2)
-read_2 <- nham_read_count_distribution(d2)
-```
-
-Visualize read count distribution like above
-
-```{r threshold_2_read_distribution}
-#| fig-width: 5
-#| fig-height: 4
-patch_read_dist_multi_columns(d2) + 
-  plot_annotation(title = "Distribution of reads in filtered data (count >= 2)",
-                  subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis")
-```
-
-## Filtering variants with counts \>= 5
-
-```{r threshold_5}
-#| fig-width: 2
-#| fig-height: 3
-
-d5 <- filter_data(data, 5)
-var_5 <- nham_variant_count_distribution(d5)
-read_5 <- nham_read_count_distribution(d5)
-```
-
-```{r threshold_5_read_distribution}
-#| fig-width: 5
-#| fig-height: 4
-patch_read_dist_multi_columns(d5) + 
-  plot_annotation(title = "Distribution of reads in filtered data (count >= 5)",
-                  subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis")
-```
-
-## Filtering variants with counts \>= 10
-
-```{r threshold_10}
-#| fig-width: 2
-#| fig-height: 3
-
-d10 <- filter_data(data, 10)
-var_10 <- nham_variant_count_distribution(d10)
-read_10 <- nham_read_count_distribution(d10)
-```
-
-```{r threshold_10_read_distribution}
-#| fig-width: 5
-#| fig-height: 4
-patch_read_dist_multi_columns(d10) + 
-  plot_annotation(title = "Distribution of reads in filtered data (count >= 10)",
-                  subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis")
-```
-
-## Filtering variants with counts \>= 100
-
-```{r threshold_100}
-#| fig-width: 2
-#| fig-height: 3
-
-d100 <- filter_data(data, 100)
-var_100 <- nham_variant_count_distribution(d100)
-read_100 <- nham_read_count_distribution(d100)
-```
-
-```{r threshold_100_read_distribution}
-#| fig-width: 5
-#| fig-height: 4
-patch_read_dist_multi_columns(d100) + 
-  plot_annotation(title = "Distribution of reads in filtered data (count >= 100)",
-                  subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis")
-```
-
-## Comparing plots for different thresholds
-
-### Variant count distributions
-
-```{r patch_variant_dist}
+```{r nham_dist_25}
 #| fig-width: 6
 #| fig-height: 6
 
-# Compare the variant count distributions for different thresholds
-# plot the above plots side by side for comparison
-var_plots <- var_raw + var_2 + var_5 + var_10 + var_100 + plot_layout(axes = "collect")
+var_nham_plots_25 <- 
+  map(filter_list_25, 
+    \(x) nham_variant_count_distribution(x$filtered)) |> 
+  patchwork::wrap_plots(axes = "collect") |> 
+  plot_annotation(title = "Distribution of variants by hamming distance") |> 
+  print()
 
-print(var_plots)
-```
-
-### Read count distributions
-
-```{r patch_read_dist}
-#| fig-width: 6
-#| fig-height: 6
-
-# plot the above plots side by side for comparison
-read_plots <- read_raw + read_2 + read_5 + read_10 + read_100 + plot_layout(axes = "collect")
-
-print(read_plots)
+read_nham_plots_25 <- 
+  map(filter_list_25, 
+    \(x) nham_read_count_distribution(x$filtered)) |> 
+  patchwork::wrap_plots(axes = "collect") |> 
+  plot_annotation(title = "Distribution of reads by hamming distance") |> 
+  print()
 ```
 
 ## Variant counts vs expected
 
-```{r variant_counts_vs_expected}
+```{r variant_counts_vs_expected_25}
 #| fig-width: 4
 #| fig-height: 2
+variant_count_by_threshold(count_log_25, filter_set_25)
+```
 
-# plot the variant counts vs expected variants from count_tracker
+## Track reads by threshold
 
-ggplot(count_tracker, aes(x = threshold, y = variants)) +
-  geom_line(alpha = 0.7) +
-  geom_point() +
+```{r track_reads_by_threshold_25}
+source("functions/0.data_processing.R") # temp
 
-  # expected variants line
-  geom_hline(yintercept = expected_variants, linetype = "dashed") +
-  annotate("text", 
-    x = max(count_tracker$threshold) * 0.7, 
-    y = expected_variants + max(count_tracker$variants)/10, 
-    label = str_c("Expected: ", format(expected_variants, big.mark = ","), " variants")) +
+format_count_log(count_log_25)
+```
 
-  labs(title = "Variant Counts with thresholds",
-       x = "Count Threshold",
-       y = "Number of Variants") +
-  theme_minimal()
+# Filtering within Input and Selection 50 counts
 
+Table of variant counts and input reads at different thresholds
+
+
+```{r filter_set50}
+filter_set_50 <- c("Input_count", "Selection_50_count")
+
+filter_list_50 <- 
+  map(thresholds, 
+    filter_data, df = data, filter_columns = filter_set_50)
+
+count_log_50 <- bind_rows(count_tracker, 
+  map(filter_list_50, \(x) x$count_tracker) |> 
+  bind_rows())
+
+```
+
+## Distribution of reads at different thresholds
+
+```{r read_distribution_50}
+#| fig-width: 5
+#| fig-height: 20
+source("functions/1.plotting.R") # temp
+
+read_distribution_50 <-
+  map2(filter_list_50, thresholds, 
+    \(x, t) patch_read_dist_multi_columns(x$filtered, title = str_c("count >= ", t))) |> 
+
+    wrap_plots(ncol = 1, axes = "collect") |>
+    plot_annotation(title = "Distribution of reads at different thresholds", subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis") |>
+    print()
+  
+```
+
+
+## Distributions across hamming distance
+
+```{r plot_set50_allthresholds}
+#| fig-width: 6
+#| fig-height: 6
+
+var_nham_plots_50 <- 
+  map(filter_list_50, 
+    \(x) nham_variant_count_distribution(x$filtered)) |> 
+  patchwork::wrap_plots(axes = "collect") |> 
+  plot_annotation(title = "Distribution of variants by hamming distance") |> 
+  print()
+
+read_nham_plots_50 <- 
+  map(filter_list_50  , 
+    \(x) nham_read_count_distribution(x$filtered)) |> 
+  patchwork::wrap_plots(axes = "collect") |> 
+  plot_annotation(title = "Distribution of reads by hamming distance") |> 
+  print()
+```
+
+
+## Variant counts vs expected
+
+```{r variant_counts_vs_expected_50}
+#| fig-width: 4
+#| fig-height: 2
+variant_count_by_threshold(count_log_50, filter_set_50)
+```
+
+## Track reads by threshold
+
+```{r track_reads_by_threshold_50}
+format_count_log(count_log_50)
+```
+
+# Filtering within Input and Selection 75 counts
+
+Table of variant counts and input reads at different thresholds
+
+
+
+```{r filter_set75_allthresholds}
+filter_set_75 <- c("Input_count", "Selection_75_count")
+
+filter_list_75 <- 
+  map(thresholds, 
+    filter_data, df = data, filter_columns = filter_set_75)
+
+count_log_75 <- bind_rows(count_tracker, 
+  map(filter_list_75, \(x) x$count_tracker) |> 
+  bind_rows())
+
+```
+
+## Distribution of reads at different thresholds
+
+```{r read_distribution_75}
+#| fig-width: 5
+#| fig-height: 20
+source("functions/1.plotting.R") # temp
+
+read_distribution_75 <-
+  map2(filter_list_75, thresholds, 
+    \(x, t) patch_read_dist_multi_columns(x$filtered, title = str_c("count >= ", t))) |> 
+
+    wrap_plots(ncol = 1, axes = "collect") |>
+    plot_annotation(title = "Distribution of reads at different thresholds", subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis") |>
+    print()
+  
+```
+
+
+## Distributions across hamming distance
+
+```{r plot_set75_allthresholds}
+#| fig-width: 6
+#| fig-height: 6
+
+var_nham_plots_75 <- 
+  map(filter_list_75, 
+    \(x) nham_variant_count_distribution(x$filtered)) |> 
+  patchwork::wrap_plots(axes = "collect") |> 
+  plot_annotation(title = "Distribution of variants by hamming distance") |> 
+  print()
+
+read_nham_plots_75 <- 
+  map(filter_list_75, 
+    \(x) nham_read_count_distribution(x$filtered)) |> 
+  patchwork::wrap_plots(axes = "collect") |> 
+  plot_annotation(title = "Distribution of reads by hamming distance") |> 
+  print()
+```
+
+
+## Variant counts vs expected
+
+```{r variant_counts_vs_expected_75}
+#| fig-width: 4
+#| fig-height: 2
+variant_count_by_threshold(count_log_75, filter_set_75)
+```
+
+## Track reads by threshold
+
+```{r track_reads_by_threshold_75}
+format_count_log(count_log_75)
 ```
 
 # Indel analysis
@@ -317,26 +369,19 @@ indel_variant_dist + indel_read_dist + plot_layout(axes = "collect") +
                   subtitle = "Comparing number of variants and number of reads for each indel length. Note log10 scale on x-axis for read distribution")
 ```
 
-# Catalysis/leak analysis 
+## Catalysis/leak analysis 
 
-## Distributions
-
-### >= 1 count
 ```{r catalysis_leak_distribution}
 #| fig-width: 5
 #| fig-height: 4
 
+score_columns_25 <- c("relative_catalysis", "relative_leak", "net_catalysis")
 
-cat_dist <- read_distribution(d1, "relative_catalysis")
-leak_dist <- read_distribution(d1, "relative_leak")
-net_cat_dist <- read_distribution(d1, "net_catalysis")
+score_dist_25 <- 
+  patch_read_dist_multi_columns(d1, score_columns_25, 
+    title = "Distribution of catalysis and leak scores; >= 1 count")
 
-(cat_dist + leak_dist + net_cat_dist +
-  plot_layout(ncol = 3)+
-  plot_annotation(title = "Distribution of catalysis and leak scores; >= 1 count",
-    subtitle = "Comparing catalysis, leak and net catalysis scores. Note log10 scale on y-axis") 
-) & 
-  geom_hline(yintercept = 1, color = "red") 
+score_dist_25 & geom_hline(yintercept = 1, color = "red") 
 ```
 
 ### \>= 2 count
