@@ -133,6 +133,31 @@ nham_read_count_distribution <- function(df, print_stats = FALSE) {
   nham_any_count_distribution(counts, x_identifier = "reads") # call the generic function to plot read counts vs nham
 }
 
+variant_count_by_threshold <- function(df, filtered_columns, 
+                                      expected_count = expected_variants) {
+
+  # plot the variant counts vs expected variants from count_tracker
+  ggplot(df, aes(x = threshold, y = variants, label = threshold)) +
+    geom_line(alpha = 0.7) +
+    geom_point() + 
+    ggrepel::geom_text_repel(box.padding = 0.5, max.overlaps = Inf, alpha = 0.7) + # add labels to points
+
+    # expected variants line
+    geom_hline(yintercept = expected_count, linetype = "dashed") +
+    annotate("text", 
+      x = max(df$threshold) * 0.7, 
+      y = expected_count + max(df$variants)/10, 
+      label = str_c("Expected: ", format(expected_count, big.mark = ","), " variants")) +
+    
+    # annotations
+    labs(title = "Variant Counts with thresholds",
+        subtitle = str_c("Filtered columns: ", str_c(filtered_columns, collapse = ", ")),
+        x = "Count Threshold",
+        y = "Number of Variants") +
+    theme_minimal()
+
+}
+
 
 # formatting numbers for plot labels ----
 #' Format numbers for plot labels: use scientific notation for large numbers, and commas for thousands.
