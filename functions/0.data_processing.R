@@ -13,6 +13,8 @@ read_and_cleanup_data <- function(file_path) {
   input_signature <- "Input"
   selection_signature <- "(neg25uM5fDUTheo|UraHisTheo|Enriched)"
   leak_signature <- "(NoTheo|UraHisVeh|Unenriched)"
+  sel_50_signature <- "(neg50uM5fDUTheo)"
+  sel_75_signature <- "(neg75uM5fDUTheo)"
   
   data <- read_tsv(file_path, lazy = TRUE) |>
     select("nt_seq", "Nham_nt", ends_with("_count")) |> # select only relevant columns
@@ -23,6 +25,8 @@ read_and_cleanup_data <- function(file_path) {
         str_detect(.x, input_signature) ~ "Input_count", # detect signature and switch to concise name
         str_detect(.x, selection_signature) ~ "Selection_count",
         str_detect(.x, leak_signature) ~ "Leak_count",
+        str_detect(.x, sel_50_signature) ~ "Selection_50_count",
+        str_detect(.x, sel_75_signature) ~ "Selection_75_count",
         TRUE ~ .x  # Keep original name if no match
       ),
       .cols = ends_with("_count")
@@ -63,26 +67,59 @@ read_and_cleanup_data <- function(file_path) {
       relative_catalysis = catalysis_score / catalysis_score[WT_finder_vec_logical],
       relative_leak = leak_score / leak_score[WT_finder_vec_logical],
       net_catalysis = relative_catalysis / (1 + relative_leak)
-  )
+    )
+
 }
-  
+
 ## Filter and print stats ----
 
-filter_data <- function(df, count_threshold = 2) {
+filter_data <- function(
+  df,
+  count_threshold = 2, 
+  filter_columns = c("Input_count", "Selection_count", "Leak_count"),
+  print_stats = FALSE
+) {
 
-  filtered <- df |> filter(if_all(matches("count"), \(ct) ct >= count_threshold))
+  filtered <- df |> filter(if_all(all_of(filter_columns), \(ct) ct >= count_threshold))
 
   fil_variants <- nrow(filtered)
   fil_reads <- sum(filtered$Input_count)
+  fil_filtered_columns <- filter_columns
 
-  count_tracker <<- count_tracker |> add_row(threshold = count_threshold, variants = fil_variants, reads = fil_reads)
+  # Update count_tracker with the current threshold and counts
+  count_tracker <- 
+    tibble(threshold = count_threshold,
+           variants = fil_variants,
+           input_reads = fil_reads,
+           filtered_columns = str_c(filter_columns, collapse = ", "))
 
-  cat("Retained ", 
-    format(fil_variants/total_variants * 100, digits = 2), 
-    "% Variants with counts >= ", count_threshold, "\n", sep = "")
-  cat("Retained ", 
-    format(fil_reads/total_reads * 100, digits = 2), 
-    "% Reads with counts >= ", count_threshold, "\n", sep = "")
+  if (print_stats) {
+    cat("Retained ",
+        format(fil_variants/total_variants * 100, digits = 2), 
+        "% Variants with counts >= ", count_threshold, "\n", sep = "")
+    cat("Retained ", 
+        format(fil_reads/total_reads * 100, digits = 2), 
+        "% Reads with counts >= ", count_threshold, "\n", sep = "")
+  }
 
-  return(filtered)
+  list(filtered = filtered, count_tracker = count_tracker)
+}
+
+
+## Format counts for display ----
+
+format_count_log <- function(count_tracker) {
+  count_tracker |>
+    mutate(
+      retained_variants = format(variants / variants[[1]] * 100, digits = 2),
+      retained_reads = format(input_reads / input_reads[[1]] * 100, digits = 2),
+      variants = format(variants, big.mark = ","),
+      input_reads = format(input_reads, big.mark = ",")) |>
+    select(threshold, retained_variants, retained_reads, variants, input_reads) |>
+    rename("Count Threshold" = threshold,
+           "Number of Variants" = variants,
+           "Number of Input Reads" = input_reads,
+           "Retained Variants (%)" = retained_variants,
+           "Retained Reads (%)" = retained_reads) |>
+    knitr::kable()
 }

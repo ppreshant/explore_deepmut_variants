@@ -34,7 +34,11 @@ file_path <- str_c(base_path, "DiMSum_Project_variant_data_merge.tsv") # for pro
 
 # global variables
 expected_variants <- 135000 # (epPCR) from colony counts (source: Lokya)
-count_tracker <<- tibble(threshold = numeric(), variants = numeric(), reads = numeric())
+count_tracker <- tibble(
+  threshold = numeric(),
+  variants = numeric(),
+  input_reads = numeric(),
+  filtered_columns = character()) # global variable to track counts at different thresholds
 ```
 
 ## Data cleanup
@@ -49,7 +53,10 @@ cat("Column names: ", paste(colnames(data), collapse = ", "), "\n")
 
 total_variants <- nrow(data)
 total_reads <- sum(data$Input_count)
-count_tracker <<- count_tracker |> add_row(threshold = 0, variants = total_variants, reads = total_reads)
+count_tracker <- count_tracker |> 
+  add_row(threshold = 0,
+          variants = total_variants, input_reads = total_reads,
+          filtered_columns = "")
 
 cat("Total variants: ", format(total_variants, big.mark = ","), "\n")
 cat("Total reads: ", format(total_reads, big.mark = ","), "\n")
@@ -80,9 +87,27 @@ patch_read_dist_multi_columns(data) +
 
 Looking at the distribution of reads, we can see that there are a lot of variants with low counts. We want to filter out these low-count variants to reduce noise in our analysis.
 
-## Filtering variants with counts \>= 1
+# Filtering within Input, Selection, and Leak counts
 
-```{r threshold_1}
+Table of variant counts and input reads at different thresholds
+
+
+```{r filter_set1_allthresholds}
+thresholds <- c(1, 2, 5, 10, 100)
+
+filter_list_25 <- 
+  map(thresholds, 
+    filter_data, df = data, filter_columns = c("Input_count", "Selection_count", "Leak_count"))
+
+count_log_25 <- bind_rows(count_tracker, 
+  map(filter_list_25, \(x) x$count_tracker) |> 
+  bind_rows())
+
+```
+
+## Distribution of reads at different thresholds
+
+```{r}
 #| fig-width: 2
 #| fig-height: 3
 
