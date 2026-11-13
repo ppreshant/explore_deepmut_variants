@@ -111,15 +111,17 @@ count_log_25 <- bind_rows(count_tracker,
 
 ```{r read_distribution_25}
 #| fig-width: 5
-#| fig-height: 20
+#| fig-height: 10
 
 read_distribution_25 <-
   map2(filter_list_25, thresholds, 
     \(x, t) patch_read_dist_multi_columns(x$filtered, title = str_c("count >= ", t))) |> 
 
-    wrap_plots(ncol = 1, axes = "collect") |>
-    plot_annotation(title = "Distribution of reads at different thresholds", subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis") |>
-    print()
+    map(\(x) wrap_elements(full = x)) |> # freeze titles of each patch
+    wrap_plots(ncol = 2, axes = "collect") |>
+    plot_annotation(title = "Distribution of reads at different thresholds", subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis")
+
+read_distribution_25
   
 ```
 
@@ -163,24 +165,25 @@ format_count_log(count_log_25)
 
 ```{r catalysis_leak_distribution_25}
 #| fig-width: 5
-#| fig-height: 20
+#| fig-height: 10
 
 score_columns_25 <- c("relative_catalysis", "relative_leak", "net_catalysis")
 
-read_distribution_25 <-
+catleak_distribution_25 <-
   map2(filter_list_25, thresholds, 
     \(x, t) 
       patch_read_dist_multi_columns(x$filtered,
         .cols = score_columns_25,
         title = str_c("count >= ", t))) |> 
 
-    wrap_plots(ncol = 1, axes = "collect")
+    map(\(x) wrap_elements(full = x)) |> # freeze titles of each patch
+    wrap_plots(ncol = 2, axes = "collect")
 
-read_distribution_25 +  
+catleak_distribution_25 +  
     plot_annotation(title = "Catalysis and leak scores; different thresholds", subtitle = "y-axis ~ log10 scale") &
     geom_hline(yintercept = 1, color = "red") 
     
-print(read_distribution_25)
+catleak_distribution_25
 ```
 
 
@@ -206,7 +209,7 @@ count_log_50 <- bind_rows(count_tracker,
 
 ```{r read_distribution_50}
 #| fig-width: 5
-#| fig-height: 20
+#| fig-height: 10
 
 read_distribution_50 <-
   map2(filter_list_50, thresholds, 
@@ -215,10 +218,11 @@ read_distribution_50 <-
         .cols = filter_set_50,
         title = str_c("count >= ", t))) |> 
 
-    wrap_plots(ncol = 1, axes = "collect") |>
-    plot_annotation(title = "Distribution of reads at different thresholds", subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis") |>
-    print()
-  
+    map(\(x) wrap_elements(full = x)) |> # freeze titles of each patch
+    wrap_plots(ncol = 3, axes = "collect") |>
+    plot_annotation(title = "Distribution of reads at different thresholds", subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis")
+
+read_distribution_50  
 ```
 
 
@@ -262,24 +266,25 @@ format_count_log(count_log_50)
 
 ```{r catalysis_distribution_50}
 #| fig-width: 5
-#| fig-height: 20
+#| fig-height: 10
 
 score_columns_50 <- c("relative_catalysis_50")
 
-read_distribution_50 <-
+catleak_distribution_50 <-
   map2(filter_list_50, thresholds, 
     \(x, t) 
       patch_read_dist_multi_columns(x$filtered,
         .cols = score_columns_50,
         title = str_c("count >= ", t))) |> 
 
-    wrap_plots(ncol = 1, axes = "collect")
+    map(\(x) wrap_elements(full = x)) |> # freeze titles of each patch
+    wrap_plots(ncol = 3, axes = "collect")
 
-read_distribution_50 +  
+catleak_distribution_50 +  
     plot_annotation(title = "Catalysis and leak scores; different thresholds", subtitle = "y-axis ~ log10 scale") &
     geom_hline(yintercept = 1, color = "red") 
     
-print(read_distribution_50)
+catleak_distribution_50
 ```
 
 # Filtering within Input and Selection 75 counts
@@ -303,7 +308,7 @@ count_log_75 <- bind_rows(count_tracker,
 
 ```{r read_distribution_75}
 #| fig-width: 5
-#| fig-height: 20
+#| fig-height: 10
 
 read_distribution_75 <-
   map2(filter_list_75, thresholds, 
@@ -312,10 +317,11 @@ read_distribution_75 <-
         .cols = filter_set_75, 
         title = str_c("count >= ", t))) |> 
 
-    wrap_plots(ncol = 1, axes = "collect") |>
-    plot_annotation(title = "Distribution of reads at different thresholds", subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis") |>
-    print()
-  
+    map(\(x) wrap_elements(full = x)) |> # freeze titles of each patch
+    wrap_plots(ncol = 3, axes = "collect") |>
+    plot_annotation(title = "Distribution of reads at different thresholds", subtitle = "Comparing input, selection and leak counts. Note log10 scale on y-axis")
+
+read_distribution_75  
 ```
 
 
@@ -359,24 +365,25 @@ format_count_log(count_log_75)
 
 ```{r catalysis_distribution_75}
 #| fig-width: 5
-#| fig-height: 20
+#| fig-height: 10
 
 score_columns_75 <- c("relative_catalysis_75")
 
-read_distribution_75 <-
+catleak_distribution_75 <-
   map2(filter_list_75, thresholds, 
     \(x, t) 
       patch_read_dist_multi_columns(x$filtered,
         .cols = score_columns_75,
         title = str_c("count >= ", t))) |> 
 
-    wrap_plots(ncol = 1, axes = "collect")
+    map(\(x) wrap_elements(full = x)) |> # freeze titles of each patch
+    wrap_plots(ncol = 3, axes = "collect")
 
-read_distribution_75 +  
+catleak_distribution_75 +  
     plot_annotation(title = "Catalysis and leak scores; different thresholds", subtitle = "y-axis ~ log10 scale") &
     geom_hline(yintercept = 1, color = "red") 
     
-print(read_distribution_75)
+catleak_distribution_75
 ```
 
 # Indel analysis
@@ -386,13 +393,14 @@ print(read_distribution_75)
 ```{r indel_read_distribution}
 #| fig-width: 2
 #| fig-height: 3
+subset_data <- filter_list_25[[3]]$filtered # count >= 2
 
-WT_len <- data |>
+WT_len <- subset_data |>
   filter(Nham_nt == 0) |>
   pull(sequence_length) |>
   unique() # get WT length 
 
-indels <- data |>
+indels <- subset_data |>
   filter(is.na(Nham_nt)) |> # filter for indels
   mutate(indel_length = sequence_length - WT_len) # calculate indel length
 
@@ -446,8 +454,8 @@ indel_variant_dist + indel_read_dist + plot_layout(axes = "collect") +
 
 
 ```{r}
-perc_cat_leak <- data |>
-  summarise(frac_cat_leak = 100 * sum(relative_catalysis > relative_leak, na.rm = TRUE) / nrow(data)) |>
+perc_cat_leak <- subset_data |>
+  summarise(frac_cat_leak = 100 * sum(relative_catalysis > relative_leak, na.rm = TRUE) / nrow(subset_data)) |>
   pull(frac_cat_leak)
 
 ```
@@ -458,7 +466,7 @@ perc_cat_leak <- data |>
 #| fig-width: 5
 #| fig-height: 3
 
-ggplot(data, aes(y = relative_catalysis, x = relative_leak)) +
+ggplot(subset_data, aes(y = relative_catalysis, x = relative_leak)) +
   geom_point(alpha = 0.1, colour = "black") +
   scale_x_log10() + scale_y_log10() +
   geom_abline(slope = 1, intercept = 0, color = "red") +
@@ -478,30 +486,13 @@ The table below counts substitutions and sums the WT-normalised score changes
 for each destination nucleotide at each position. Indels are excluded, and a multi-mutant contributes its complete score change to each of its substitutions.
 
 ```{r contribution_data_net_cat}
-subset_data <- filter_list_25[[3]]$filtered # count >= 2
 
 contribution1 <- make_contribution_table(subset_data)
 
-# contribution1 |> filter(total_mutations > 0) |> 
-#   View(title = "contr1")
+source("functions/1.plotting.R") # temp
 
 # plot total_net catalysis across positions
-contribution1 |> 
-  # filter(total_mutations > 0) |> 
-  ggplot(aes(x = position, y = total_net_catalysis_mean)) +
-  geom_point() + geom_line(alpha = 0.4) +
-
-  # annotations for positions of interest
-  geom_hline(yintercept = 0.5, color = "red") + 
-  annotate("rect", xmin = 21, xmax = 27, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "orange") + # ribozyme core
-
-  # communication modules
-  annotate("rect", xmin = 49, xmax = 53, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
-  annotate("rect", xmin = 73, xmax = 77, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
-  # geom_annotate("rect", xmin = 73, xmax = 77, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "grey") +
-
-  labs(title = "Distribution of total net catalysis mean across positions") +
-  theme_minimal()
+plot_contribution_across_sequence(contribution1, "total_net_catalysis_mean")
 
 ```
 
@@ -510,22 +501,7 @@ contribution1 |>
 ```{r contribution_data_rel_cat}
 
 # plot total_relative catalysis across positions
-contribution1 |> 
-  # filter(total_mutations > 0) |> 
-  ggplot(aes(x = position, y = total_relative_catalysis_mean)) +
-  geom_point() + geom_line(alpha = 0.4) +
-
-  # annotations for positions of interest
-  geom_hline(yintercept = 1, color = "red") + 
-  annotate("rect", xmin = 21, xmax = 27, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "orange") + # ribozyme core
-
-  # communication modules
-  annotate("rect", xmin = 49, xmax = 53, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
-  annotate("rect", xmin = 73, xmax = 77, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
-  # geom_annotate("rect", xmin = 73, xmax = 77, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "grey") +
-
-  labs(title = "Distribution of total relative catalysis mean across positions") +
-  theme_minimal()
+plot_contribution_across_sequence(contribution1, "total_relative_catalysis_mean")
 
 ```
 
@@ -534,21 +510,5 @@ contribution1 |>
 ```{r contribution_data_rel_leak}
 
 # plot total_relative catalysis across positions
-contribution1 |> 
-  # filter(total_mutations > 0) |> 
-  ggplot(aes(x = position, y = total_relative_leak_mean)) +
-  geom_point() + geom_line(alpha = 0.4) +
-
-  # annotations for positions of interest
-  geom_hline(yintercept = 1, color = "red") + 
-  annotate("rect", xmin = 21, xmax = 27, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "orange") + # ribozyme core
-
-  # communication modules
-  annotate("rect", xmin = 49, xmax = 53, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
-  annotate("rect", xmin = 73, xmax = 77, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
-  # geom_annotate("rect", xmin = 73, xmax = 77, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "grey") +
-
-  labs(title = "Distribution of total relative leak mean across positions") +
-  theme_minimal()
-
+plot_contribution_across_sequence(contribution1, "total_relative_leak_mean")
 ```

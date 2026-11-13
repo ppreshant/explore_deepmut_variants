@@ -158,6 +158,37 @@ variant_count_by_threshold <- function(df, filtered_columns,
 
 }
 
+## Plot contributions across the sequence -----
+plot_contribution_across_sequence <- 
+  function(contribution_df, .col = "total_net_catalysis_mean",
+           title = "Contribution assigned to mutations across sequence") {  
+
+  # plot total_net catalysis across positions
+contribution_df |> 
+  # filter(total_mutations > 0) |> 
+  ggplot(aes(x = position, y = .data[[.col]])) +
+  geom_point() + geom_line(alpha = 0.4) +
+
+  # annotations for positions of interest
+  geom_hline(yintercept = 0.5, color = "red") + 
+  annotate("rect", xmin = 21, xmax = 27, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "orange") + # ribozyme core
+  annotate("text", x = 24, y = 2.5, label = "Core", vjust = -1, color = "darkorange3") +
+
+  # communication modules
+  annotate("rect", xmin = 49, xmax = 53, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
+  annotate("text", x = 51, y = 2.5, label = "CM1", vjust = -1, color = "blue") +
+
+  annotate("rect", xmin = 73, xmax = 77, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
+  annotate("text", x = 75, y = 2.5, label = "CM2", vjust = -1, color = "blue") +
+  
+  # aptamer
+  annotate("text", x = 63, y = 2.5, label = "Aptamer", vjust = -1) +
+
+  labs(title = title) +
+  theme_minimal()
+
+}
+
 
 # formatting numbers for plot labels ----
 #' Format numbers for plot labels: use scientific notation for large numbers, and commas for thousands.
