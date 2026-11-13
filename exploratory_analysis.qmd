@@ -512,3 +512,47 @@ plot_contribution_across_sequence(contribution1, "total_relative_catalysis_mean"
 # plot total_relative catalysis across positions
 plot_contribution_across_sequence(contribution1, "total_relative_leak_mean")
 ```
+
+# Selecting variants of interest 
+
+Selecting variants that span the distribution of net_catalysis scores for individual testing (with fluorescence)
+
+
+```{r select_variants_of_interest}
+
+ranked <- subset_data |>
+  # filter significant counts (well represented in library); and no NA
+  filter(if_any(any_of(filter_set_25), \(x) x >= 100),
+    !is.na(net_catalysis)) |>
+  arrange(desc(net_catalysis)) |>
+  mutate(rank = row_number())
+
+nrow(ranked)
+
+# WT rank
+wt_rank <- filter(ranked, Nham_nt == 0) |> pull(rank) |> print()
+```
+
+Rank of the WT variant is `{r} wt_rank`. The table below shows the selected variants of interest for individual testing.
+
+
+```{r}
+# selection list: pick 4 where net_catalysis > 1, and 6 sampled across the rest of the distribution (ranked by net_catalysis)
+net_catalysis_threshold <- 1
+rank_high_net_catalysis <- ranked |>
+  filter(net_catalysis > net_catalysis_threshold) |>
+  arrange(desc(net_catalysis)) |>
+  mutate(rank_net_catalysis = row_number())
+
+# select things where rank is multiple of len/10 + top
+selected <- ranked |>
+  filter(rank %% floor(nrow(ranked) / 10) == 0 | rank == 1 | rank == nrow(subset_data)) |>
+  select(nt_seq, rank, net_catalysis, relative_catalysis, relative_leak, Nham_nt, everything())
+
+# save to csv
+write_csv(selected, str_c(base_path, "selected_variants_of_interest.csv"))
+
+# Show formatted data 
+kable(selected, caption = "Selected variants of interest for individual testing")
+
+```
