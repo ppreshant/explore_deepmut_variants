@@ -9,7 +9,8 @@
 			"printf": true,
 			"command": true,
 			"true": true,
-			"R": true
+			"R": true,
+			"Rscript": true
 		}
 	}
 }

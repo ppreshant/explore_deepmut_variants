@@ -110,8 +110,8 @@ count_log_25 <- bind_rows(count_tracker,
 ## Distribution of reads at different thresholds
 
 ```{r read_distribution_25}
-#| fig-width: 5
-#| fig-height: 10
+#| fig-width: 7
+#| fig-height: 7
 
 read_distribution_25 <-
   map2(filter_list_25, thresholds, 
@@ -164,8 +164,8 @@ format_count_log(count_log_25)
 ## Catalysis/leak analysis 
 
 ```{r catalysis_leak_distribution_25}
-#| fig-width: 5
-#| fig-height: 10
+#| fig-width: 7
+#| fig-height: 7
 
 score_columns_25 <- c("relative_catalysis", "relative_leak", "net_catalysis")
 
@@ -208,8 +208,8 @@ count_log_50 <- bind_rows(count_tracker,
 ## Distribution of reads at different thresholds
 
 ```{r read_distribution_50}
-#| fig-width: 5
-#| fig-height: 10
+#| fig-width: 7
+#| fig-height: 7
 
 read_distribution_50 <-
   map2(filter_list_50, thresholds, 
@@ -266,7 +266,7 @@ format_count_log(count_log_50)
 
 ```{r catalysis_distribution_50}
 #| fig-width: 5
-#| fig-height: 10
+#| fig-height: 7
 
 score_columns_50 <- c("relative_catalysis_50")
 
@@ -307,8 +307,8 @@ count_log_75 <- bind_rows(count_tracker,
 ## Distribution of reads at different thresholds
 
 ```{r read_distribution_75}
-#| fig-width: 5
-#| fig-height: 10
+#| fig-width: 7
+#| fig-height: 7
 
 read_distribution_75 <-
   map2(filter_list_75, thresholds, 
@@ -365,7 +365,7 @@ format_count_log(count_log_75)
 
 ```{r catalysis_distribution_75}
 #| fig-width: 5
-#| fig-height: 10
+#| fig-height: 7
 
 score_columns_75 <- c("relative_catalysis_75")
 
@@ -537,22 +537,36 @@ Rank of the WT variant is `{r} wt_rank`. The table below shows the selected vari
 
 
 ```{r}
-# selection list: pick 4 where net_catalysis > 1, and 6 sampled across the rest of the distribution (ranked by net_catalysis)
-net_catalysis_threshold <- 1
-rank_high_net_catalysis <- ranked |>
-  filter(net_catalysis > net_catalysis_threshold) |>
-  arrange(desc(net_catalysis)) |>
-  mutate(rank_net_catalysis = row_number())
+# Select five ranks from the net_catalysis > 1 group and five from the
+# remaining distribution, evenly spaced within each group.
+rank_netCatG1 <- ranked |>
+  filter(net_catalysis > 1) |>
+  select(rank) |> max() |> print()
 
-# select things where rank is multiple of len/10 + top
+rank_max <- nrow(ranked) |> print()
+
+if (rank_netCatG1 < 5 || rank_max - rank_netCatG1 < 5) {
+  warning("Could not select 5 ranks above or below net_catalysis > 1.")
+}
+
+selected_ranks <- c(
+  round(seq(1, rank_netCatG1, length.out = 5)),
+  round(seq(rank_netCatG1 + (rank_max - rank_netCatG1)/5, rank_max, length.out = 5))
+)
+
 selected <- ranked |>
-  filter(rank %% floor(nrow(ranked) / 10) == 0 | rank == 1 | rank == nrow(subset_data)) |>
+  filter(rank %in% selected_ranks) |>
   select(nt_seq, rank, net_catalysis, relative_catalysis, relative_leak, Nham_nt, everything())
 
 # save to csv
 write_csv(selected, str_c(base_path, "selected_variants_of_interest.csv"))
 
-# Show formatted data 
-kable(selected, caption = "Selected variants of interest for individual testing")
+# Show formatted data
+mutate(selected, 
+  across(where(is.numeric),
+    \(x) signif(x, 2) |> 
+          format(big.mark = ",") )) |>
+
+knitr::kable(caption = "Selected variants of interest for individual testing")
 
 ```
