@@ -582,3 +582,29 @@ mutate(selected,
 knitr::kable(caption = "Selected variants of interest for individual testing")
 
 ```
+
+## Send thresholded data to Dylan
+Remove insertions and deletions, and save separate files for each threshold. This will be used for individual testing of variants.
+
+
+```{r}
+# create path if it doesn't exist
+dylan_files <- str_c(base_path, "dylan_files/")
+if (!dir.exists(dylan_files)) {
+  dir.create(dylan_files, recursive = TRUE)
+}
+
+total_variants <- nrow(data)
+
+map2(filter_list_25, thresholds, 
+  \(x, t) {
+    filtered_data <- x$filtered |>
+      filter(!is.na(Nham_nt)) # remove indels
+  
+  # report the percentage of total variants that pass the threshold    
+  cat("threshold >= ", t, ": ", format(nrow(filtered_data)/total_variants * 100, digits = 2), " % of total variants\n")
+  cat("\t Retains: ", format(nrow(filtered_data), big.mark = ","), " variants\n\n")
+
+    write_csv(filtered_data, str_c(dylan_files, "filtered_threshold_", t, ".csv"))
+  })
+```
