@@ -519,42 +519,54 @@ Selecting variants that span the distribution of net_catalysis scores for indivi
 
 
 ```{r select_variants_of_interest}
-
-ranked <- subset_data |>
-  # filter significant counts (well represented in library); and no NA
-  filter(if_any(any_of(filter_set_25), \(x) x >= 100),
-    !is.na(net_catalysis)) |>
+ranked_catalysis <- subset_data |>
+  # filter: no NA and well represented in data and signif selection counts
+  filter(if_any(any_of(filter_set_25), \(x) x >= 1000),
+    Selection_count >= 10, !is.na(net_catalysis)) |>
   arrange(desc(net_catalysis)) |>
   mutate(rank = row_number())
 
-nrow(ranked)
+nrow(ranked_catalysis)
 
 # WT rank
-wt_rank <- filter(ranked, Nham_nt == 0) |> pull(rank) |> print()
+wt_rank <- filter(ranked_catalysis, Nham_nt == 0) |> pull(rank) |> print()
 ```
 
-Rank of the WT variant is `{r} wt_rank`. The table below shows the selected variants of interest for individual testing.
+Rank of the WT variant is `{r} wt_rank`. Check the distribution of net_catalysis scores for the selection set and the total set.
+
+```{r}
+dcomb <- bind_rows(
+  ranked_catalysis |> select(net_catalysis) |> mutate(set = "b. selection"),
+  subset_data |> select(net_catalysis) |> mutate(set = "a. total d2")
+)
+
+ggplot(dcomb, aes(x = net_catalysis, fill = set)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50) +
+  scale_x_log10() +
+
+  geom_vline(xintercept = 0.5) +
+  annotate(geom = "text", x = 0.5, y = 0, label = "WT", vjust = -1) +
+  labs(title = "Distribution of Net Catalysis Scores",
+       x = "Net Catalysis (WT normalized)",
+       y = "Frequency") +
+  theme_minimal()
+```
+
+The distribution does look distorted but we don't need it to be representative; as much as pick variants with high coverage.
+
+The table below shows the selected variants of interest for individual testing.
 
 
 ```{r}
 # Select five ranks from the net_catalysis > 1 group and five from the
 # remaining distribution, evenly spaced within each group.
-rank_netCatG1 <- ranked |>
-  filter(net_catalysis > 1) |>
-  select(rank) |> max() |> print()
 
-rank_max <- nrow(ranked) |> print()
+selected_ranks <- c( # total 11 variants of interest
+  round(seq(1, wt_rank, length.out = 8)), # 7 elements above WT rank
+  round(seq(wt_rank, nrow(ranked_catalysis), length.out = 4)) # 3 elements below WT rank
+  ) |> unique() # remove duplicate of WT
 
-if (rank_netCatG1 < 5 || rank_max - rank_netCatG1 < 5) {
-  warning("Could not select 5 ranks above or below net_catalysis > 1.")
-}
-
-selected_ranks <- c(
-  round(seq(1, rank_netCatG1, length.out = 5)),
-  round(seq(rank_netCatG1 + (rank_max - rank_netCatG1)/5, rank_max, length.out = 5))
-)
-
-selected <- ranked |>
+selected <- ranked_catalysis |>
   filter(rank %in% selected_ranks) |>
   select(nt_seq, rank, net_catalysis, relative_catalysis, relative_leak, Nham_nt, everything())
 
