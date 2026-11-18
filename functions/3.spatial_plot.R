@@ -59,17 +59,52 @@ parse_dotbracket <- function(db, pal = c(stem = "darkseagreen3", loop = "thistle
 # hhrzTheoAptaz_dotbracket <- ".(((((((((....((((((.......((((......)))).......(((((.(((((.......))))).))))).))))))....))))))))))."
 # ann <- parse_dotbracket(hhrzTheoAptaz_dotbracket) |> print()
 
+## Plot annotation ----
+
+dark <- function(x) ifelse(is.na(x), "grey20", rgb(t(col2rgb(x) * 0.6), maxColorValue = 255))
+
+
+#' Annotates a ggplot with RNA structural elements based on the provided annotation data frame.
+#' Author: Claude.AI with Prashant K. (17/Nov/26)
+#' @param ann_df A data frame containing structural annotations with columns: Name, arm, start, end, type, and colour.
+#' @param pal A named vector of colors for different structural elements (stems, loops, tails).
+#' @param vj A named vector specifying vertical justification for text annotations (auto and manual).
+#' @param sz A named vector specifying text size for annotations (auto and manual).
+#' @param a A named vector specifying alpha transparency for the rectangles (auto and manual).
+#' @return A list of ggplot layers that can be added to a ggplot object to visualize the RNA structural elements.
+annotate_sequence <- function(ann_df,
+                         pal = c(stem = "darkseagreen3", loop = "thistle3", tail = "grey80"),
+                         vj  = c(auto = 3.5, manual = 1.5),   # label tier, relative to panel top
+                         sz  = c(auto = 2.5, manual = 4),
+                         a   = c(auto = 0.12, manual = 0.2)) {
+  ann_df <- ann_df |>
+    filter(is.na(type) | type != "tail") |>                    # manual rows have no type
+    filter(is.na(arm) | arm != "3p") |> # remove 3p arm of stems (redundant)
+    mutate(colour = ifelse(source == "auto", unname(pal[type]), colour),
+           txt = dark(colour), mid = (start + end) / 2)
+
+  tiers <- lapply(c("auto", "manual"), function(s) {
+    d <- filter(ann_df, source == s)
+    list(
+      geom_rect(data = filter(d, !is.na(colour)), inherit.aes = FALSE, alpha = a[[s]],
+                aes(xmin = start - 0.5, xmax = end + 0.5, ymin = -Inf, ymax = Inf, fill = I(colour))),
+      geom_text(data = d, inherit.aes = FALSE, y = Inf, vjust = vj[[s]], size = sz[[s]],
+                fontface = if (s == "manual") "bold" else "plain",
+                aes(x = mid, label = Name, colour = I(txt)))
+    )
+  })
+  list(tiers, coord_cartesian(clip = "off"), theme(plot.margin = margin(t = 25)))
+}
+
 
 # Plot contributions across the sequence -----
 #' Plots the contribution of mutations across the ribozyme sequence, with optional annotations for structural elements.
 #' Author: GH Copilot with Prashant K. (<17/Nov/26)
 #' @param contribution_df A data frame containing contribution data with columns: position and the specified contribution column.
 #' @param .col The name of the column in contribution_df to plot (default: "total_net_catalysis_mean").
-#' @param annotation_df An optional data frame containing structural annotations with columns: Name, arm, start, end, type, and colour.
 #' @return A ggplot object visualizing the contribution across the sequence, with optional structural annotations.
 plot_contribution_across_sequence <- 
   function(contribution_df, .col = "total_net_catalysis_mean",
-           annotation_df = NULL,
            title = "Contribution assigned to mutations across sequence") {
 
   # plot total_net catalysis across positions

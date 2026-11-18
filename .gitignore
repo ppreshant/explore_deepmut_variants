@@ -7,3 +7,5 @@ enrichment_data/
 
 # other files
 snowflake.log
+.vdoc*
+*/.vdoc*
