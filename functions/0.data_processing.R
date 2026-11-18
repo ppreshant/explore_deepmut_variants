@@ -81,7 +81,7 @@ read_and_cleanup_data <- function(file_path) {
 
 filter_data <- function(
   df,
-  count_threshold = 2, 
+  count_threshold = 2,
   filter_columns = c("Input_count", "Selection_count", "Leak_count"),
   print_stats = FALSE
 ) {

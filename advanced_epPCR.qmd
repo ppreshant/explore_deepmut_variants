@@ -102,7 +102,7 @@ The table below counts substitutions and sums the WT-normalised score changes
 for each destination nucleotide at each position. Indels are excluded, and a multi-mutant contributes its complete score change to each of its substitutions.
 
 ```{r contribution_data_net_cat}
-subset_data <- filter_list_25[[3]]$filtered # count >= 2
+subset_data <- filter_data(data, 2)$filtered # count >= 2
 
 contribution1 <- make_contribution_table(subset_data)
 
@@ -131,7 +131,7 @@ ggsave(str_c(base_path,"/spatial_plot.png"), annotated_plt, width = 8, height = 
 ```{r contribution_data_rel_cat}
 
 # plot total_relative catalysis across positions
-plot_contribution_across_sequence(contribution1, "total_relative_catalysis_mean")
+plot_contribution_across_sequence(contribution1, "total_relative_catalysis_mean") + annotate_sequence(annotation_df)
 
 ```
 
@@ -140,5 +140,5 @@ plot_contribution_across_sequence(contribution1, "total_relative_catalysis_mean"
 ```{r contribution_data_rel_leak}
 
 # plot total_relative catalysis across positions
-plot_contribution_across_sequence(contribution1, "total_relative_leak_mean")
+plot_contribution_across_sequence(contribution1, "total_relative_leak_mean") + annotate_sequence(annotation_df)
 ```
