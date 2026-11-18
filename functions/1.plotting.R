@@ -1,3 +1,5 @@
+library(tidyverse)
+
 # Plotting functions ---------
 
 ## annotation generating function -----
@@ -161,7 +163,7 @@ variant_count_by_threshold <- function(df, filtered_columns,
 ## Plot contributions across the sequence -----
 plot_contribution_across_sequence <- 
   function(contribution_df, .col = "total_net_catalysis_mean",
-           title = "Contribution assigned to mutations across sequence") {  
+           title = "Contribution assigned to mutations across sequence") {
 
   # plot total_net catalysis across positions
 contribution_df |> 

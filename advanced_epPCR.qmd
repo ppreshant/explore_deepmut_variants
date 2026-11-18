@@ -30,6 +30,7 @@ library(patchwork) # for combining plots
 source("functions/0.data_processing.R")
 source("functions/1.plotting.R")
 source("functions/2.contribution_table.R")
+source("functions/3.annotations_RNA.R")
 
 # locate the data
 base_path <- "enrichment_data/theoAptzepPCR_lokya/"
@@ -69,6 +70,13 @@ total_reads <- sum(data$Input_count)
 
 cat("Total variants: ", format(total_variants, big.mark = ","), "\n")
 cat("Total reads: ", format(total_reads, big.mark = ","), "\n")
+```
+
+## Convert dot-bracket structure for plotting
+
+```{r parse-dotbracket}
+hhrzTheoAptaz_db <- ".(((((((((....((((((.......((((......)))).......(((((.(((((.......))))).))))).))))))....)))))))))."
+ann <- parse_dotbracket(hhrzTheoAptaz_db) |> print()
 ```
 
 # Mapping contribution to each nucleotide position
