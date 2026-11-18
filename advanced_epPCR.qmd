@@ -1,0 +1,108 @@
+---
+title: "Advanced analysis of epPCR deepmut variants"
+# execute:
+  # echo: false
+format:
+  html:
+    toc: true
+    code-fold: true
+    embed-resources: true
+    fig-width: 8
+    fig-height: 6  
+---
+
+# Exploratory analysis
+
+Goals: Tease apart contributions of mutations across the ribozyme sequence to catalysis and leak, and test other hypotheses about the data.
+
+## Preliminary setup
+
+```{r loadStuff}
+#| echo: false
+#| warning: false
+#| message: false
+
+library(tidyverse, quietly = TRUE)
+library(magrittr) # for special Tee pipe operator %T>% (Error check, unique WT before calc)
+library(patchwork) # for combining plots
+
+# import functions
+source("functions/0.data_processing.R")
+source("functions/1.plotting.R")
+source("functions/2.contribution_table.R")
+
+# locate the data
+base_path <- "enrichment_data/theoAptzepPCR_lokya/"
+# file_path <- str_c(base_path, "subset.tsv") # for testing
+file_path <- str_c(base_path, "DiMSum_Project_variant_data_merge.tsv") # for production
+
+# global variables
+expected_variants <- 135000 # (epPCR) from colony counts (source: Lokya)
+count_tracker <- tibble(
+  threshold = numeric(),
+  variants = numeric(),
+  input_reads = numeric(),
+  filtered_columns = character()) # global variable to track counts at different thresholds
+```
+
+## Data cleanup
+
+- Select relevant columns
+- Clean up column names
+- Calculate enrichment, leak metrics Ref: \_Borrowing some code from DiMSum/[split-multiinputs.R](https://github.com/ppreshant/DiMSum/blob/master/scripts/split_multiinputs.R)
+
+```{r data-cleanup}
+#| echo: false
+#| warning: false
+#| message: false
+
+data <- read_and_cleanup_data(file_path)
+cat("Column names: ", paste(colnames(data), collapse = ", "), "\n")
+
+total_variants <- nrow(data)
+total_reads <- sum(data$Input_count)
+
+# count_tracker <- count_tracker |> 
+#   add_row(threshold = 0,
+#           variants = total_variants, input_reads = total_reads,
+#           filtered_columns = "")
+
+cat("Total variants: ", format(total_variants, big.mark = ","), "\n")
+cat("Total reads: ", format(total_reads, big.mark = ","), "\n")
+```
+
+# Mapping contribution to each nucleotide position
+
+## Mapping catalysis scores across the ribozyme sequence
+
+The table below counts substitutions and sums the WT-normalised score changes
+for each destination nucleotide at each position. Indels are excluded, and a multi-mutant contributes its complete score change to each of its substitutions.
+
+```{r contribution_data_net_cat}
+subset_data <- filter_list_25[[3]]$filtered # count >= 2
+
+contribution1 <- make_contribution_table(subset_data)
+
+source("functions/1.plotting.R") # temp
+
+# plot total_net catalysis across positions
+plot_contribution_across_sequence(contribution1, "total_net_catalysis_mean")
+
+```
+
+## Relative catalysis scores across the ribozyme sequence
+
+```{r contribution_data_rel_cat}
+
+# plot total_relative catalysis across positions
+plot_contribution_across_sequence(contribution1, "total_relative_catalysis_mean")
+
+```
+
+## Relative leak scores across the ribozyme sequence
+
+```{r contribution_data_rel_leak}
+
+# plot total_relative catalysis across positions
+plot_contribution_across_sequence(contribution1, "total_relative_leak_mean")
+```
