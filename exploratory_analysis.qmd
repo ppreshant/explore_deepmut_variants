@@ -479,14 +479,16 @@ ggplot(subset_data, aes(y = relative_catalysis, x = relative_leak)) +
 
 # Selecting variants of interest 
 
-Selecting variants that span the distribution of net_catalysis scores for individual testing (with fluorescence)
+Selecting variants that span the distribution of net_catalysis scores for individual testing (with fluorescence, flow cytometry)
+1. Order the data by net_catalysis score
+2. Select score-quantile bin boundaries separately above and below WT
+3. Select the variants with max selection_freq within each bin (to ensure good coverage/representation within the library for individual testing)
 
 
 ```{r select_variants_of_interest}
+subset_data <- filter_data(data, 2)$filtered # count >= 2
+
 ranked_catalysis <- subset_data |>
-  # filter: no NA and well represented in data and signif selection counts
-  filter(if_any(any_of(filter_set_25), \(x) x >= 1000),
-    Selection_count >= 10, !is.na(net_catalysis)) |>
   arrange(desc(net_catalysis)) |>
   mutate(rank = row_number())
 
@@ -522,17 +524,61 @@ The table below shows the selected variants of interest for individual testing.
 
 
 ```{r}
-# Select five ranks from the net_catalysis > 1 group and five from the
-# remaining distribution, evenly spaced within each group.
+# Create score-quantile bins separately above and below WT. Define WT itself
+# independently so it is not counted in or duplicated by an adjacent bin.
+make_score_quantile_bins <- function(x, n_bins) {
+  breaks <- quantile(
+    x,
+    probs = seq(0, 1, length.out = n_bins + 1),
+    na.rm = TRUE,
+    names = FALSE,
+    type = 8
+  ) |> unique()
 
-selected_ranks <- c( # total 11 variants of interest
-  round(seq(1, wt_rank, length.out = 8)), # 7 elements above WT rank
-  round(seq(wt_rank, nrow(ranked_catalysis), length.out = 4)) # 3 elements below WT rank
-  ) |> unique() # remove duplicate of WT
+  if (length(breaks) < 2L) {
+    return(rep(1L, length(x)))
+  }
 
-selected <- ranked_catalysis |>
-  filter(rank %in% selected_ranks) |>
-  select(nt_seq, rank, net_catalysis, relative_catalysis, relative_leak, Nham_nt, everything())
+  cut(x, breaks = breaks, include.lowest = TRUE, labels = FALSE)
+}
+
+wt_row <- ranked_catalysis |>
+  filter(rank == wt_rank)
+
+non_wt_variants <- ranked_catalysis |>
+  filter(rank != wt_rank) |>
+  mutate(
+    region = if_else(rank < wt_rank, "above WT", "below WT"),
+    bin = NA_integer_
+  )
+
+non_wt_variants <- non_wt_variants |>
+  group_by(region) |>
+  group_modify(
+    ~ .x |> mutate(
+      bin = make_score_quantile_bins(
+        net_catalysis,
+        n_bins = if (.y$region == "above WT") 7L else 3L
+      )
+    )
+  ) |>
+  ungroup()
+
+selected_from_bins <- non_wt_variants |>
+  group_by(region, bin) |>
+  slice_max(
+    order_by = Selection_count,
+    n = 1,
+    with_ties = FALSE,
+    na_rm = TRUE
+  ) |>
+  ungroup()
+
+selected <- bind_rows(wt_row, selected_from_bins) |>
+  arrange(rank) |>
+  distinct(nt_seq, .keep_all = TRUE) |>
+  select(nt_seq, rank, net_catalysis, relative_catalysis, relative_leak,
+         Nham_nt, region, bin, Selection_count, everything())
 
 # save to csv
 write_csv(selected, str_c(base_path, "selected_variants_of_interest.csv"))
