@@ -30,7 +30,7 @@ library(patchwork) # for combining plots
 source("functions/0.data_processing.R")
 source("functions/1.plotting.R")
 source("functions/2.contribution_table.R")
-source("functions/3.annotations_RNA.R")
+source("functions/3.spatial_plot.R")
 
 # locate the data
 base_path <- "enrichment_data/theoAptzepPCR_lokya/"
@@ -75,8 +75,36 @@ cat("Total reads: ", format(total_reads, big.mark = ","), "\n")
 ## Convert dot-bracket structure for plotting
 
 ```{r parse-dotbracket}
+source("functions/3.spatial_plot.R") # temp
+
 hhrzTheoAptaz_db <- ".(((((((((....((((((.......((((......)))).......(((((.(((((.......))))).))))).))))))....)))))))))."
-ann <- parse_dotbracket(hhrzTheoAptaz_db) |> print()
+secondary_structure <- parse_dotbracket(hhrzTheoAptaz_db)
+
+# Add annotations for key positions manually
+# annotations for positions of interest
+  geom_hline(yintercept = 0.5, color = "red") + 
+  annotate("rect", xmin = 21, xmax = 27, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "orange") + # ribozyme core
+  annotate("text", x = 24, y = 2.5, label = "Core", vjust = -1, color = "darkorange3") +
+
+  # communication modules
+  annotate("rect", xmin = 49, xmax = 53, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
+  annotate("text", x = 51, y = 2.5, label = "CM1", vjust = -1, color = "blue") +
+
+  annotate("rect", xmin = 73, xmax = 77, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
+  annotate("text", x = 75, y = 2.5, label = "CM2", vjust = -1, color = "blue") +
+  
+  # aptamer
+  annotate("text", x = 63, y = 2.5, label = "Aptamer", vjust = -1) +
+
+annotation_df <- bind_rows(
+  secondary_structure,
+  tibble(Name = "Core", start = 21, end = 27, colour = "orange"),
+  tibble(Name = "CM1", start = 49, end = 53, colour = "blue"),
+  tibble(Name = "CM2", start = 73, end = 77, colour = "blue"),
+  tibble(Name = "Aptamer", start = 63, end = 63, colour = NA)
+
+)
+
 ```
 
 # Mapping contribution to each nucleotide position
@@ -97,6 +125,13 @@ source("functions/1.plotting.R") # temp
 plot_contribution_across_sequence(contribution1, "total_net_catalysis_mean")
 
 ```
+
+## Show secondary structure with contribution scores
+
+```{r}
+plot_contribution_across_sequence(contribution1, "total_net_catalysis_mean", annotation_df = annotation_df)
+```
+
 
 ## Relative catalysis scores across the ribozyme sequence
 
