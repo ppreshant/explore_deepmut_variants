@@ -593,6 +593,34 @@ knitr::kable(caption = "Selected variants of interest for individual testing")
 
 ```
 
+Visualize the selected data on the catalysis vs leak plot to see where they fall in the distribution.
+
+```{r}
+
+cat_leak_plot <-
+  ggplot(subset_data,
+    aes(y = relative_catalysis, x = relative_leak,
+    size = log10(Selection_count), colour = ntile(desc(net_catalysis), 4))) +
+  geom_point(alpha = 0.2) +
+  # scale_alpha_manual(values = c(10.1, 0.2, 0.25, 0.3)) +
+  scale_x_log10() + scale_y_log10() +
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  labs(title = "Comparison of Catalysis and Leak Scores",
+        y = "Catalysis, WT normalized",
+        x = "Leak, WT normalized") +
+  theme_minimal()
+
+cat_leak_plot
+
+cat_leak_plot +
+  geom_point(data = selected, color = "red", size = 2) +
+  geom_text(data = selected, aes(y = relative_catalysis, x = relative_leak, label = rank), color = "red", vjust = -1, size = 3) +
+  labs(title = "Selected Variants of Interest on Catalysis vs Leak Plot",
+       subtitle = "Red points indicate selected variants for individual testing")
+
+```
+
+
 ## Send thresholded data to Dylan
 Remove insertions and deletions, and save separate files for each threshold. This will be used for individual testing of variants.
 
