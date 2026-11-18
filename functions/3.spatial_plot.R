@@ -61,7 +61,7 @@ parse_dotbracket <- function(db, pal = c(stem = "darkseagreen3", loop = "thistle
 
 ## Plot annotation ----
 
-dark <- function(x) ifelse(is.na(x), "grey20", rgb(t(col2rgb(x) * 0.6), maxColorValue = 255))
+dark <- function(x) ifelse(is.na(x), "black", rgb(t(col2rgb(x) * 0.6), maxColorValue = 255))
 
 
 #' Annotates a ggplot with RNA structural elements based on the provided annotation data frame.
@@ -73,27 +73,33 @@ dark <- function(x) ifelse(is.na(x), "grey20", rgb(t(col2rgb(x) * 0.6), maxColor
 #' @param a A named vector specifying alpha transparency for the rectangles (auto and manual).
 #' @return A list of ggplot layers that can be added to a ggplot object to visualize the RNA structural elements.
 annotate_sequence <- function(ann_df,
-                         pal = c(stem = "darkseagreen3", loop = "thistle3", tail = "grey80"),
-                         vj  = c(auto = 3.5, manual = 1.5),   # label tier, relative to panel top
+                         pal = c(stem = "darkseagreen3", loop = NA, tail = "grey80"),
+                         vj  = c(auto = 3.5, manual = 1),   # label tier, relative to panel top
+                         stagger = 1.4,  # vertical offset for auto labels
                          sz  = c(auto = 2.5, manual = 4),
-                         a   = c(auto = 0.12, manual = 0.2)) {
+                         a   = c(auto = 0.12, manual = 0.2),
+                         face = c(auto = "plain", manual = "bold")) {
   ann_df <- ann_df |>
     filter(is.na(type) | type != "tail") |>                    # manual rows have no type
-    filter(is.na(arm) | arm != "3p") |> # remove 3p arm of stems (redundant)
     mutate(colour = ifelse(source == "auto", unname(pal[type]), colour),
-           txt = dark(colour), mid = (start + end) / 2)
+           txt = dark(colour), mid = (start + end) / 2,
+           
+           tier = ifelse(source == "auto", (cumsum(source == "auto") - 1) %% 3, 0), # prevent overlap by staggaring auto labels
+           vj_ = ifelse(source == "auto", vj["auto"] + tier * stagger, vj["manual"]),
+           sz_ = sz[source], a_ = a[source], face_ = face[source])
 
-  tiers <- lapply(c("auto", "manual"), function(s) {
-    d <- filter(ann_df, source == s)
-    list(
-      geom_rect(data = filter(d, !is.na(colour)), inherit.aes = FALSE, alpha = a[[s]],
-                aes(xmin = start - 0.5, xmax = end + 0.5, ymin = -Inf, ymax = Inf, fill = I(colour))),
-      geom_text(data = d, inherit.aes = FALSE, y = Inf, vjust = vj[[s]], size = sz[[s]],
-                fontface = if (s == "manual") "bold" else "plain",
-                aes(x = mid, label = Name, colour = I(txt)))
-    )
-  })
-  list(tiers, coord_cartesian(clip = "off"), theme(plot.margin = margin(t = 25)))
+  # plot annotation rectangles and text labels
+  # Note: I() plots the value as is, without scaling or transformation/legend
+  list(
+    geom_rect(data = ann_df, inherit.aes = FALSE,
+              aes(xmin = start - 0.5, xmax = end + 0.5, ymin = -Inf, ymax = Inf,
+                  fill = I(colour), alpha = I(a_))),
+    geom_text(data = ann_df, inherit.aes = FALSE, y = Inf,
+              aes(x = mid, label = Name, colour = I(txt), vjust = I(vj_),
+                  size = I(sz_), fontface = I(face_))),
+    coord_cartesian(clip = "off"),
+    theme(plot.margin = margin(t = 25))
+  )
 }
 
 
@@ -112,21 +118,6 @@ contribution_df |>
   # filter(total_mutations > 0) |> 
   ggplot(aes(x = position, y = .data[[.col]])) +
   geom_point() + geom_line(alpha = 0.4) +
-
-  # annotations for positions of interest
-  geom_hline(yintercept = 0.5, color = "red") + 
-  annotate("rect", xmin = 21, xmax = 27, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "orange") + # ribozyme core
-  annotate("text", x = 24, y = 2.5, label = "Core", vjust = -1, color = "darkorange3") +
-
-  # communication modules
-  annotate("rect", xmin = 49, xmax = 53, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
-  annotate("text", x = 51, y = 2.5, label = "CM1", vjust = -1, color = "blue") +
-
-  annotate("rect", xmin = 73, xmax = 77, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
-  annotate("text", x = 75, y = 2.5, label = "CM2", vjust = -1, color = "blue") +
-  
-  # aptamer
-  annotate("text", x = 63, y = 2.5, label = "Aptamer", vjust = -1) +
 
   labs(title = title) +
   theme_minimal()

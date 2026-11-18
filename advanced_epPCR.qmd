@@ -87,7 +87,7 @@ annotation_df <- bind_rows(
     Name = c("Core", "CM1", "CM2", "Aptamer"),
     start = c(21, 49, 73, 53),
     end = c(27, 53, 77, 73),
-    colour = c("orange", "blue", "blue", "grey80"),
+    colour = c("orange", "blue", "blue", NA),
     source = "manual"
   )
 )
@@ -117,7 +117,12 @@ plt_spatial <-
 ```{r}
 source("functions/3.spatial_plot.R") # temp
 
-plt_spatial + annotate_sequence(annotation_df)
+annotated_plt <-
+  plt_spatial + annotate_sequence(annotation_df)
+
+annotated_plt
+
+ggsave(str_c(base_path,"/spatial_plot.png"), annotated_plt, width = 8, height = 6)
 ```
 
 
