@@ -547,7 +547,7 @@ knitr::kable(caption = "Selected variants of interest for individual testing")
 
 ```
 
-## Send thresholded data to Dylan
+# Send thresholded data to Dylan
 Remove insertions and deletions, and save separate files for each threshold. This will be used for individual testing of variants.
 
 
@@ -571,4 +571,58 @@ map2(filter_list_25, thresholds,
 
     write_csv(filtered_data, str_c(dylan_files, "filtered_threshold_", t, ".csv"))
   })
+```
+
+## Special filtering 
+Goal is the create a synthetic dataset with d5 + equal # of variants non functional (Selection_count = 0, Input_count > 5) and 50% variants functional (Selection_count > 0). This will be used to test the ML model.
+
+```{r special_filtering}
+
+d5_data <- filter_list_25[[4]]$filtered # count >= 5
+nvar_d5 <- nrow(d5_data)
+
+d5_nonfunctional <- filter(data, Selection_count == 0 & Input_count > 5)
+nrow(d5_nonfunctional)
+
+write_csv(d5_nonfunctional, str_c(dylan_files, "nonfunctional_d5.csv"))
+```
+
+### Plots for QC
+
+
+```{r}
+
+# Another filter: both input and leak >= 5
+d5sub_nonfunctional <- filter(data, Selection_count == 0 & Input_count > 5 & Leak_count >= 5)
+nrow(d5sub_nonfunctional)
+
+write_csv(d5sub_nonfunctional, str_c(dylan_files, "nonfunctional_wLeak_d5.csv"))
+
+
+d5_combined <- bind_rows(
+  mutate(d5_data, set = "functional"),
+  mutate(d5_nonfunctional, set = "non-functional")
+) # combine d5 + non-functional variants
+
+ggplot(d5_combined, aes(fill = set, y = Input_count)) +
+  geom_histogram(bins = 30, colour = "black") +
+  scale_y_log10() +
+  labs(title = "Input counts for d5 and non-functional variants",
+       x = "Variant set",
+       y = "Input count (log10 scale)") +
+  theme_minimal()
+
+
+map(c("Input_count", "Selection_count", "Leak_count"), 
+  \(col) ggplot(d5_combined, aes(fill = set, y = !!sym(col))) +
+    geom_histogram(bins = 30, colour = "black", alpha = 0.3) +
+    scale_y_log10() +
+    theme_minimal()
+  ) |>
+    patchwork::wrap_plots(ncol = 3)
+
+
+d5_mix <- bind_rows(
+  d5_data, 
+  slice_sample(d5_nonfunctional, n = nvar_d5)) # sample equal number of non-functional variants
 ```
