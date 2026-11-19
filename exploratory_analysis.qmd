@@ -542,41 +542,41 @@ make_score_quantile_bins <- function(x, n_bins) {
   cut(x, breaks = breaks, include.lowest = TRUE, labels = FALSE)
 }
 
-wt_row <- ranked_catalysis |>
-  filter(rank == wt_rank)
+bin_spec <- tribble(
+  ~region,     ~n_bins, ~offset,
+  "above WT",  7L,      0L,
+  "WT",        1L,      7L,
+  "below WT",  3L,      8L
+)
 
-non_wt_variants <- ranked_catalysis |>
-  filter(rank != wt_rank) |>
+binned <- ranked_catalysis |>
   mutate(
-    region = if_else(rank < wt_rank, "above WT", "below WT"),
+    region = case_when( # break into 3 regions
+      rank < wt_rank ~ "above WT",
+      rank == wt_rank ~ "WT",
+      rank > wt_rank ~ "below WT",
+      TRUE ~ NA_character_
+    ),
     bin = NA_integer_
-  )
+  ) |>
 
-non_wt_variants <- non_wt_variants |>
+  # Assign contiguous bins: above WT = 1-7, WT = 8, below WT = 9-11
+  left_join(bin_spec, by = "region") |>
   group_by(region) |>
   group_modify(
     ~ .x |> mutate(
-      bin = make_score_quantile_bins(
-        net_catalysis,
-        n_bins = if (.y$region == "above WT") 7L else 3L
-      )
+      bin = offset + make_score_quantile_bins(net_catalysis, n_bins)
     )
   ) |>
-  ungroup()
+  ungroup() |>
+  select(-n_bins, -offset)
 
-selected_from_bins <- non_wt_variants |>
+selected <- binned |>
+  # Select the variant with the maximum selection count within each bin
   group_by(region, bin) |>
-  slice_max(
-    order_by = Selection_count,
-    n = 1,
-    with_ties = FALSE,
-    na_rm = TRUE
-  ) |>
-  ungroup()
+  slice_max(Selection_count, with_ties = FALSE) |>
 
-selected <- bind_rows(wt_row, selected_from_bins) |>
-  arrange(rank) |>
-  distinct(nt_seq, .keep_all = TRUE) |>
+  arrange(desc(net_catalysis)) |>
   select(nt_seq, rank, net_catalysis, relative_catalysis, relative_leak,
          Nham_nt, region, bin, Selection_count, everything())
 
@@ -586,7 +586,7 @@ write_csv(selected, str_c(base_path, "selected_variants_of_interest.csv"))
 # Show formatted data
 mutate(selected, 
   across(where(is.numeric),
-    \(x) signif(x, 2) |> 
+    \(x) signif(x, 2) |>
           format(big.mark = ",") )) |>
 
 knitr::kable(caption = "Selected variants of interest for individual testing")
@@ -598,9 +598,9 @@ Visualize the selected data on the catalysis vs leak plot to see where they fall
 ```{r}
 
 cat_leak_plot <-
-  ggplot(subset_data,
+  ggplot(binned,
     aes(y = relative_catalysis, x = relative_leak,
-    size = log10(Selection_count), colour = ntile(desc(net_catalysis), 4))) +
+    size = log10(Selection_count), colour = bin)) +
   geom_point(alpha = 0.2) +
   # scale_alpha_manual(values = c(10.1, 0.2, 0.25, 0.3)) +
   scale_x_log10() + scale_y_log10() +
@@ -613,11 +613,15 @@ cat_leak_plot <-
 cat_leak_plot
 
 cat_leak_plot +
-  geom_point(data = selected, color = "red", size = 2) +
-  geom_text(data = selected, aes(y = relative_catalysis, x = relative_leak, label = rank), color = "red", vjust = -1, size = 3) +
+  geom_point(data = selected, color = "red") +
+  geom_text(data = selected, aes(y = relative_catalysis, x = relative_leak, label = rank), color = "red", vjust = -1, size = 3) + 
+  scale_colour_viridis_c(option = "plasma", direction = 1, na.value = "grey",) +
   labs(title = "Selected Variants of Interest on Catalysis vs Leak Plot",
        subtitle = "Red points indicate selected variants for individual testing")
 
+ggsave(str_c(base_path, "quantile_selected.png"), width = 9, height = 5)
+
+write_csv(selected, str_c(base_path, "quantile_selected.csv"))
 ```
 
 
