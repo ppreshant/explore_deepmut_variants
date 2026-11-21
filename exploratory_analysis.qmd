@@ -542,6 +542,17 @@ make_score_quantile_bins <- function(x, n_bins) {
   cut(x, breaks = breaks, include.lowest = TRUE, labels = FALSE)
 }
 
+make_score_linear_bins <- function(x, n_bins) {
+  breaks <- seq(min(x, na.rm = TRUE), max(x, na.rm = TRUE), length.out = n_bins + 1) |>
+    unique()
+
+  if (length(breaks) < 2L) {
+    return(rep(1L, length(x)))
+  }
+
+  cut(x, breaks = breaks, include.lowest = TRUE, labels = FALSE)
+}
+
 bin_spec <- tribble(
   ~region,     ~n_bins, ~offset,
   "above WT",  7L,      0L,
@@ -565,7 +576,7 @@ binned <- ranked_catalysis |>
   group_by(region) |>
   group_modify(
     ~ .x |> mutate(
-      bin = offset + make_score_quantile_bins(net_catalysis, n_bins)
+      bin = offset + make_score_linear_bins(net_catalysis, n_bins)
     )
   ) |>
   ungroup() |>
@@ -581,15 +592,15 @@ selected <- binned |>
          Nham_nt, region, bin, Selection_count, everything())
 
 # save to csv
-write_csv(selected, str_c(base_path, "selected_variants_of_interest.csv"))
+# write_csv(selected, str_c(base_path, "selected_variants_of_interest.csv"))
 
 # Show formatted data
-mutate(selected, 
-  across(where(is.numeric),
-    \(x) signif(x, 2) |>
-          format(big.mark = ",") )) |>
+# mutate(selected, 
+#   across(where(is.numeric),
+#     \(x) signif(x, 2) |>
+#           format(big.mark = ",") )) |>
 
-knitr::kable(caption = "Selected variants of interest for individual testing")
+# knitr::kable(caption = "Selected variants of interest for individual testing")
 
 ```
 
