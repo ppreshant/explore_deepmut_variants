@@ -498,35 +498,23 @@ nrow(ranked_catalysis)
 wt_rank <- filter(ranked_catalysis, Nham_nt == 0) |> pull(rank) |> print()
 ```
 
-Rank of the WT variant is `{r} wt_rank`. Check the distribution of net_catalysis scores for the selection set and the total set.
-
-```{r}
-dcomb <- bind_rows(
-  ranked_catalysis |> select(net_catalysis) |> mutate(set = "b. selection"),
-  subset_data |> select(net_catalysis) |> mutate(set = "a. total d2")
-)
-
-ggplot(dcomb, aes(x = net_catalysis, fill = set)) +
-  geom_histogram(position = "identity", alpha = 0.5, bins = 50) +
-  scale_x_log10() +
-
-  geom_vline(xintercept = 0.5) +
-  annotate(geom = "text", x = 0.5, y = 0, label = "WT", vjust = -1) +
-  labs(title = "Distribution of Net Catalysis Scores",
-       x = "Net Catalysis (WT normalized)",
-       y = "Frequency") +
-  theme_minimal()
-```
-
-The distribution does look distorted but we don't need it to be representative; as much as pick variants with high coverage.
-
 The table below shows the selected variants of interest for individual testing.
 
-
 ```{r}
 
+make_score_linear_bins <- function(x, n_bins) {
+  breaks <- seq(min(x, na.rm = TRUE), max(x, na.rm = TRUE), length.out = n_bins + 1) |>
+    unique()
+
+  if (length(breaks) < 2L) {
+    return(rep(1L, length(x)))
+  }
+
+  cut(x, breaks = breaks, include.lowest = TRUE, labels = FALSE)
+}
+
 binned <- ranked_catalysis |>
-  mutate(bin = ntile(rank, 10))
+  mutate(bin = make_score_linear_bins(log10(net_catalysis), 11))
 
 selected <- binned |>
   # Select the variant with the maximum selection count within each bin
@@ -539,7 +527,7 @@ selected <- binned |>
          Nham_nt, bin, Selection_count, everything())
 
 # save to csv
-# write_csv(selected, str_c(base_path, "selected_variants_of_interest.csv"))
+write_csv(selected, str_c(base_path, "selected_variants_of_interest.csv"))
 
 # Show formatted data
 # mutate(selected, 
@@ -550,21 +538,34 @@ selected <- binned |>
 # knitr::kable(caption = "Selected variants of interest for individual testing")
 
 ```
-temp visualization
+## Visualizing selected variants
 
-```{r}
+Visualize the selected data on the net catalysis distribution to see where they fall in the distribution.
+
+```{r selected_variants_on_net_catalysis_distribution}
+#| fig-width: 3
+#| fig-height: 5
+
 subset_data |>
   read_distribution("net_catalysis") +
+  geom_hline(yintercept = 0.5, color = "red") + # plot the WT
+  annotate(geom = "text", y = 0.5, x = Inf, label = "WT", colour = 'red', vjust = -1, hjust = 1) +
+
+  geom_hline(data = summarize(binned, .by = bin, boundary = min(net_catalysis)), aes(yintercept = boundary), color = "blue") +
+
+  # plot the selected variants on the distribution
   geom_point(data = selected, aes(y = net_catalysis, x = 0), color = "red") +
-  geom_text(data = selected, aes(y = net_catalysis, x = 0, label = rank), color = "red", vjust = -1, size = 3) +
+  geom_text(data = selected, aes(y = net_catalysis, x = 0, label = rank), color = "red", hjust = -1, size = 3) +
   labs(title = "Selected Variants of Interest on Net Catalysis Distribution",
        subtitle = "Red points indicate selected variants for individual testing")
+
+ggsave(str_c(base_path, "netCat_selected.png"), width = 3, height = 5)
 ```
 
 
 Visualize the selected data on the catalysis vs leak plot to see where they fall in the distribution.
 
-```{r}
+```{r selected_variants_on_catalysis_leak_plot}
 
 cat_leak_plot <-
   ggplot(binned,
@@ -588,13 +589,12 @@ cat_leak_plot +
   labs(title = "Selected Variants of Interest on Catalysis vs Leak Plot",
        subtitle = "Red points indicate selected variants for individual testing")
 
-ggsave(str_c(base_path, "quantile_selected.png"), width = 9, height = 5)
+ggsave(str_c(base_path, "catLeak_selected.png"), width = 9, height = 5)
 
-write_csv(selected, str_c(base_path, "quantile_selected.csv"))
 ```
 
 
-## Send thresholded data to Dylan
+# Send thresholded data to Dylan
 Remove insertions and deletions, and save separate files for each threshold. This will be used for individual testing of variants.
 
 
