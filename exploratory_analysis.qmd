@@ -524,72 +524,19 @@ The table below shows the selected variants of interest for individual testing.
 
 
 ```{r}
-# Create score-quantile bins separately above and below WT. Define WT itself
-# independently so it is not counted in or duplicated by an adjacent bin.
-make_score_quantile_bins <- function(x, n_bins) {
-  breaks <- quantile(
-    x,
-    probs = seq(0, 1, length.out = n_bins + 1),
-    na.rm = TRUE,
-    names = FALSE,
-    type = 8
-  ) |> unique()
-
-  if (length(breaks) < 2L) {
-    return(rep(1L, length(x)))
-  }
-
-  cut(x, breaks = breaks, include.lowest = TRUE, labels = FALSE)
-}
-
-make_score_linear_bins <- function(x, n_bins) {
-  breaks <- seq(min(x, na.rm = TRUE), max(x, na.rm = TRUE), length.out = n_bins + 1) |>
-    unique()
-
-  if (length(breaks) < 2L) {
-    return(rep(1L, length(x)))
-  }
-
-  cut(x, breaks = breaks, include.lowest = TRUE, labels = FALSE)
-}
-
-bin_spec <- tribble(
-  ~region,     ~n_bins, ~offset,
-  "above WT",  7L,      0L,
-  "WT",        1L,      7L,
-  "below WT",  3L,      8L
-)
 
 binned <- ranked_catalysis |>
-  mutate(
-    region = case_when( # break into 3 regions
-      rank < wt_rank ~ "above WT",
-      rank == wt_rank ~ "WT",
-      rank > wt_rank ~ "below WT",
-      TRUE ~ NA_character_
-    ),
-    bin = NA_integer_
-  ) |>
-
-  # Assign contiguous bins: above WT = 1-7, WT = 8, below WT = 9-11
-  left_join(bin_spec, by = "region") |>
-  group_by(region) |>
-  group_modify(
-    ~ .x |> mutate(
-      bin = offset + make_score_linear_bins(net_catalysis, n_bins)
-    )
-  ) |>
-  ungroup() |>
-  select(-n_bins, -offset)
+  mutate(bin = ntile(rank, 10))
 
 selected <- binned |>
   # Select the variant with the maximum selection count within each bin
-  group_by(region, bin) |>
-  slice_max(Selection_count, with_ties = FALSE) |>
+  group_by(bin) |>
 
-  arrange(desc(net_catalysis)) |>
+  slice_min(relative_leak, prop = 0.5) |> # select half the low leak population
+  slice_max(Selection_count, with_ties = FALSE) |> # max selection count within half-bin
+
   select(nt_seq, rank, net_catalysis, relative_catalysis, relative_leak,
-         Nham_nt, region, bin, Selection_count, everything())
+         Nham_nt, bin, Selection_count, everything())
 
 # save to csv
 # write_csv(selected, str_c(base_path, "selected_variants_of_interest.csv"))
@@ -603,6 +550,17 @@ selected <- binned |>
 # knitr::kable(caption = "Selected variants of interest for individual testing")
 
 ```
+temp visualization
+
+```{r}
+subset_data |>
+  read_distribution("net_catalysis") +
+  geom_point(data = selected, aes(y = net_catalysis, x = 0), color = "red") +
+  geom_text(data = selected, aes(y = net_catalysis, x = 0, label = rank), color = "red", vjust = -1, size = 3) +
+  labs(title = "Selected Variants of Interest on Net Catalysis Distribution",
+       subtitle = "Red points indicate selected variants for individual testing")
+```
+
 
 Visualize the selected data on the catalysis vs leak plot to see where they fall in the distribution.
 
