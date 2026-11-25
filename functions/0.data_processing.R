@@ -15,9 +15,21 @@ read_and_cleanup_data <- function(file_path) {
   leak_signature <- "(NoTheo|UraHisVeh|Unenriched)"
   sel_50_signature <- "(neg50uM5fDUTheo)"
   sel_75_signature <- "(neg75uM5fDUTheo)"
+
+  temp_30_signature <- "(30\\_)"
+  # temp_signature <- "(Theo|Veh)[0-9]{2}(C|_)"
+
+  # extract_temperature <- function(columns) {
+  #   str_extract(columns, temp_signature) |>
+  #     str_extract("[0-9]{2}(C|_)") |>
+  #     str_replace("_$", "C")
+  # }
   
   data <- read_tsv(file_path, lazy = TRUE) |>
-    select("nt_seq", "Nham_nt", ends_with("_count")) |> # select only relevant columns
+    select("nt_seq", "Nham_nt", ends_with("_count") & # select only relevant columns
+
+           # retain only 30C tempoerature columns
+           matches(temp_30_signature)) |>
 
     # cleanup column names
     rename_with(
