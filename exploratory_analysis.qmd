@@ -28,12 +28,12 @@ source("functions/1.plotting.R")
 source("functions/2.contribution_table.R")
 
 # locate the data
-base_path <- "enrichment_data/theoAptzepPCR_lokya/"
+base_path <- "enrichment_data/3R5library_madison/"
 # file_path <- str_c(base_path, "subset.tsv") # for testing
 file_path <- str_c(base_path, "DiMSum_Project_variant_data_merge.tsv") # for production
 
 # global variables
-expected_variants <- 135000 # (epPCR) from colony counts (source: Lokya)
+expected_variants <- 1 # (epPCR) from colony counts (source: Lokya)
 count_tracker <- tibble(
   threshold = numeric(),
   variants = numeric(),
@@ -48,6 +48,8 @@ count_tracker <- tibble(
 - Calculate enrichment, leak metrics Ref: \_Borrowing some code from DiMSum/[split-multiinputs.R](https://github.com/ppreshant/DiMSum/blob/master/scripts/split_multiinputs.R)
 
 ```{r data-cleanup}
+source("functions/0.data_processing.R") # temp
+
 data <- read_and_cleanup_data(file_path)
 cat("Column names: ", paste(colnames(data), collapse = ", "), "\n")
 
@@ -94,7 +96,7 @@ Table of variant counts and input reads at different thresholds
 
 
 ```{r filter_set1_allthresholds}
-thresholds <- c(0, 1, 2, 5, 10, 100)
+thresholds <- c(2, 3, 4)
 filter_set_25 <- c("Input_count", "Selection_count", "Leak_count")
 
 filter_list_25 <- 
@@ -618,6 +620,8 @@ map2(filter_list_25, thresholds,
 
     write_csv(filtered_data, str_c(dylan_files, "filtered_threshold_", t, ".csv"))
   })
+
+
 ```
 
 ## Special filtering 
@@ -625,13 +629,14 @@ Goal is the create a synthetic dataset with d5 + equal # of variants non functio
 
 ```{r special_filtering}
 
-d5_data <- filter_list_25[[4]]$filtered # count >= 5
-nvar_d5 <- nrow(d5_data)
+# non-functional data at each threshold.
+no_indels <- filter(data, !is.na(Nham_nt)) # remove indels
+map(thresholds, 
+  \(t) {
+    filter(no_indels, Selection_count == 0 & Input_count > t) |>
 
-d5_nonfunctional <- filter(data, Selection_count == 0 & Input_count > 5)
-nrow(d5_nonfunctional)
-
-write_csv(d5_nonfunctional, str_c(dylan_files, "nonfunctional_d5.csv"))
+    write_csv(str_c(dylan_files, "nonFunctional_threshold_", t, ".csv"))
+  })
 ```
 
 ### Plots for QC

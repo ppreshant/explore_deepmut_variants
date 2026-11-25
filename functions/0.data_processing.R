@@ -24,7 +24,7 @@ read_and_cleanup_data <- function(file_path) {
   #     str_extract("[0-9]{2}(C|_)") |>
   #     str_replace("_$", "C")
   # }
-  
+
   data <- read_tsv(file_path, lazy = TRUE) |>
     select("nt_seq", "Nham_nt", ends_with("_count") & # select only relevant columns
 
