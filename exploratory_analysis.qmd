@@ -28,7 +28,7 @@ source("functions/1.plotting.R")
 source("functions/2.contribution_table.R")
 
 # locate the data
-base_path <- "enrichment_data/3R5library_madison/"
+base_path <- "enrichment_data/4NCMLibrary_madison/"
 # file_path <- str_c(base_path, "subset.tsv") # for testing
 file_path <- str_c(base_path, "DiMSum_Project_variant_data_merge.tsv") # for production
 
@@ -48,8 +48,6 @@ count_tracker <- tibble(
 - Calculate enrichment, leak metrics Ref: \_Borrowing some code from DiMSum/[split-multiinputs.R](https://github.com/ppreshant/DiMSum/blob/master/scripts/split_multiinputs.R)
 
 ```{r data-cleanup}
-source("functions/0.data_processing.R") # temp
-
 data <- read_and_cleanup_data(file_path)
 cat("Column names: ", paste(colnames(data), collapse = ", "), "\n")
 
@@ -96,7 +94,7 @@ Table of variant counts and input reads at different thresholds
 
 
 ```{r filter_set1_allthresholds}
-thresholds <- c(2, 3, 4)
+thresholds <- c(5, 10, 100)
 filter_set_25 <- c("Input_count", "Selection_count", "Leak_count")
 
 filter_list_25 <- 
