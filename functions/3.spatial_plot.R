@@ -57,7 +57,9 @@ parse_dotbracket <- function(dotbracket, pal = c(stem = "darkseagreen3", loop = 
   # Combine stems and loops, assign colors, and return the data frame
   bind_rows(stems, loops) |>
     arrange(start) |>
-    mutate(colour = unname(pal[type]))
+    mutate(colour = unname(pal[type])) |> 
+
+    fill(arm, .direction = "downup") # fill arm column for loops based on the above stem
 }
 
 # Notes: 
