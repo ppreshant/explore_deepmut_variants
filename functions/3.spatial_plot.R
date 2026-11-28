@@ -5,10 +5,14 @@ library(tidyverse)
 #' @param dotbracket A string in dot-bracket notation representing RNA secondary structure.
 #' @param pal A named vector of colors for different structural elements (stems, hairpins, interior loops, multiloops, external loops).
 #' @return A data frame with columns: Name, arm, start, end, type, and colour, representing the structural elements of
-parse_dotbracket <- function(db, pal = c(stem = "darkseagreen3", loop = "thistle3", tail = "grey80")) {
-  ch <- strsplit(db, "")[[1]]; n <- length(ch)
+parse_dotbracket <- function(dotbracket, pal = c(stem = "darkseagreen3", loop = "thistle3", tail = "grey80")) {
+  ch <- strsplit(dotbracket, "")[[1]]; n <- length(ch) # split the dot-bracket string into characters and get its length
+  
+  # Initialize vectors to track partners, enclosing pairs, and parents for each dot-bracket char
   partner <- integer(n); enc <- integer(n); parent <- integer(n)
-  stack <- integer()
+  stack <- integer() # stack to keep track of open parentheses
+
+  # identify pairs and their relationships within the dotbracket string
   for (i in seq_len(n)) {
     top <- if (length(stack)) tail(stack, 1) else 0L
     if (ch[i] == "(") { parent[i] <- top; stack <- c(stack, i) }
@@ -19,20 +23,26 @@ parse_dotbracket <- function(db, pal = c(stem = "darkseagreen3", loop = "thistle
   }
 
   # stems: runs of stacked pairs, one row per arm
-  op  <- which(partner > seq_len(n))
-  new <- c(TRUE, !(diff(op) == 1 & diff(partner[op]) == -1))
+  op  <- which(partner > seq_len(n)) # get indices of opening parentheses (5' end of stems)
+  new <- c(TRUE, !(diff(op) == 1 & diff(partner[op]) == -1)) # identify new stems based on consecutive pairs
+  
+  # stems: create a data frame with start and end positions for each stem arm
   stems <- tibble(pos = op, pair = partner[op], id = cumsum(new)) |>
     summarise(`5p` = list(range(pos)), `3p` = list(range(pair)), .by = id) |>
     pivot_longer(c(`5p`, `3p`), names_to = "arm", values_to = "r") |>
-    transmute(Name = paste0("stem", id), arm, start = map_int(r, 1), end = map_int(r, 2),
-              type = "stem")
+    mutate(Name = paste0("stem", id), arm, start = map_int(r, 1), end = map_int(r, 2),
+              type = "stem", .keep = "none")
+
 
   # loops: unpaired runs grouped by the enclosing pair
-  nchild <- table(factor(parent[op], levels = c(0, op)))
+
+  # count the number of children for each enclosing pair (to classify loops: junctions vs closed loops)
+  nchild <- table(factor(parent[op], levels = c(0, op))) # 
   runs <- rle(ch == ".")
   e <- cumsum(runs$lengths); s <- e - runs$lengths + 1
   
-  # loops: unpaired runs grouped by the enclosing pair
+  # loops: create a data frame with start and end positions for each loop,
+  # .. along with its classification (tail, junction, closed)
   loops <- tibble(start = s, end = e, dot = runs$values) |>
   filter(dot) |>
   mutate(enc   = enc[start],
@@ -41,8 +51,8 @@ parse_dotbracket <- function(db, pal = c(stem = "darkseagreen3", loop = "thistle
   mutate(grp = min(start), .by = c(class, enc)) |>
   mutate(Name = paste0(c(closed = "L", junction = "junction", tail = "tail")[class],
                         dense_rank(grp)), .by = class) |>
-  transmute(Name, arm = NA_character_, start, end,
-            type = ifelse(class == "tail", "tail", "loop"))
+  mutate(Name, arm = NA_character_, start, end,
+            type = ifelse(class == "tail", "tail", "loop"), .keep = "none")
 
   # Combine stems and loops, assign colors, and return the data frame
   bind_rows(stems, loops) |>

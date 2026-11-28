@@ -75,8 +75,6 @@ cat("Total reads: ", format(total_reads, big.mark = ","), "\n")
 ## Convert dot-bracket structure for plotting
 
 ```{r parse-dotbracket}
-source("functions/3.spatial_plot.R") # temp
-
 hhrzTheoAptaz_db <- ".(((((((((....((((((.......((((......)))).......(((((.(((((.......))))).))))).))))))....)))))))))."
 secondary_structure <- parse_dotbracket(hhrzTheoAptaz_db)
 
